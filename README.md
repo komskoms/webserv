@@ -1,2 +1,2 @@
 # webserve
-- make web serve like nginx
+- make web server like nginx
