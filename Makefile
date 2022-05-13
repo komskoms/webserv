@@ -6,11 +6,10 @@ INC         =	./parse/ServerManager.hpp \
                 ./parse/ServerConfig.hpp \
 				./parse/LocationConfig.hpp
 
-SRCS        =	./parse/ServerManager.cpp \
-            	./parse/ServerConfig.cpp \
+SRCS        =	./parse/ServerConfig.cpp \
 				./parse/LocationConfig.cpp \
 				main.cpp
-
+# ./parse/ServerManager.cpp
 OBJS        = $(SRCS:.cpp=.o)
 RM          = rm -f
 
@@ -18,7 +17,7 @@ RM          = rm -f
 	${CXX} ${CXXFLAGS} ${DEBUG} -c $< -o ${<:.cpp=.o}
 
 $(NAME): ${OBJS}
-	${CXX} ${CXXFLAGS} ${DEBUG} $(OBJS) -o $(NAME)
+	${CXX} ${CXXFLAGS} ${DEBUG} $(OBJS) -I server -o $(NAME)
 
 all: $(NAME)
 

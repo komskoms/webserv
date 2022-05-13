@@ -14,7 +14,7 @@ class ServerManager {
         }
         void    initParseConfig(std::string filePath);
         void    printAll();
-        //void    errorParsing(std::string cause) {}
+        // void    errorParsing(std::string cause) {}
     private:
         std::set<ServerConfig *>        _defaultConfigs;    // 서버마다 속성값 다르기에 구분
 };
