@@ -1,4 +1,4 @@
-#include "./server/ServerManager.hpp"
+#include "ServerManager.hpp"
 
 int main(int argc, char **argv) {
     ServerManager sm;

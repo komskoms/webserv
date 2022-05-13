@@ -1,15 +1,22 @@
 NAME        = webserve
+
 CXX         = c++
 CXXFLAGS     = #-Wall -Wextra -Werror #-std=c++98
 DEBUG       = -g
-INC         =	./parse/ServerManager.hpp \
-                ./parse/ServerConfig.hpp \
-				./parse/LocationConfig.hpp
 
-SRCS        =	./parse/ServerConfig.cpp \
-				./parse/LocationConfig.cpp \
+INC         =	-I .
+
+
+SRCS        =	ServerConfig.cpp \
+                Log.cpp \
+				LocationConfig.cpp \
+				Server.cpp \
+				ServerManager.cpp \
+				Socket.cpp \
 				main.cpp
-# ./parse/ServerManager.cpp
+
+#				Request.cpp
+
 OBJS        = $(SRCS:.cpp=.o)
 RM          = rm -f
 
@@ -17,7 +24,7 @@ RM          = rm -f
 	${CXX} ${CXXFLAGS} ${DEBUG} -c $< -o ${<:.cpp=.o}
 
 $(NAME): ${OBJS}
-	${CXX} ${CXXFLAGS} ${DEBUG} $(OBJS) -I server -o $(NAME)
+	${CXX} ${CXXFLAGS} ${DEBUG} $(OBJS) $(INC) -o $(NAME)
 
 all: $(NAME)
 

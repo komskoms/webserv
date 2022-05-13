@@ -12,7 +12,7 @@
 #include <sys/event.h>  // struct kevent, kevent()
 #include <unistd.h>
 
-#include "class.hpp"
+#include "Request.hpp"
 
 using std::cin;
 using std::cout;

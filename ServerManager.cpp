@@ -13,6 +13,11 @@ ServerManager::~ServerManager() {
 	for (;sockIter != _mSocket.end() ; sockIter++) {
 		delete sockIter->second;
 	}
+
+    for (std::set<ServerConfig *>::iterator itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
+        delete *itr;
+    }
+
 	Log::Verbose("All Sockets has been deleted.");
 	// close(_kqueue);
 }

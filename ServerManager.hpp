@@ -4,7 +4,7 @@
 #include "Log.hpp"
 #include "Server.hpp"
 #include "Socket.hpp"
-#include "../parse/ServerConfig.hpp"
+#include "ServerConfig.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -20,12 +20,7 @@
 class ServerManager {
 public:
 	ServerManager();
-	~ServerManager(){
-		for (std::set<ServerConfig *>::iterator itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
-			delete *itr;
-		}
-	}
-
+    ~ServerManager();
 
 	/**
 	 * @brief Read and parse configuration file to initialize server.
