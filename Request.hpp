@@ -40,9 +40,11 @@ public:
     char getMajorVersion() const;
     char getMinorVersion() const;
 
-    bool isReadyToService();
+    bool isReady() const;
 
     void describe(std::ostream& out) const; // this is for debug usage
+
+    void addLine(const std::string& line) { this->message += line; };
 
 private:
     std::string message;

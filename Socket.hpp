@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include "Request.hpp"
 
 #define TCP_MTU 1500
 
@@ -21,14 +22,16 @@ public:
 
 	Socket*			acceptClient();
 	void			receive();
-	void			transmit(std::string message);
-	void			addKevent(int kqueue, int filter);
+	void			transmit();
+	void			addKevent(int kqueue, int filter, void* udata);
 
 	bool			isclient();
 	int				getIdent();
 	std::string		getAddr();
 	int				getPort();
 	std::string		getHTTPMessage();
+    const Request&  getRequest() const { return this->_request; };
+    void addReceivedLine(const std::string& line) { this->_request.addLine(line); };
 
 private:
 	bool			_client;
@@ -42,6 +45,11 @@ private:
 	void			setNewSocket();
 	void			bindThisSocket();
 	void			listenThisSocket();
+
+    Request         _request;
+    // Response        _response;
+    //  string message
+    //  pos
 };
 
 #endif
