@@ -1,6 +1,24 @@
 #include "ServerManager.hpp"
 
-void ServerManager::initParseConfig(std::string filePath) {
+
+ServerManager::ServerManager() :
+_kqueue(-1),
+_alive(true)
+{
+	Log::Verbose("A ServerManager has been generated.");
+}
+
+ServerManager::~ServerManager() {
+	SocketMapIter	sockIter = _mSocket.begin();
+	for (;sockIter != _mSocket.end() ; sockIter++) {
+		delete sockIter->second;
+	}
+	Log::Verbose("All Sockets has been deleted.");
+	// close(_kqueue);
+}
+
+
+void 	ServerManager::initParseConfig(std::string filePath) {
     std::fstream        fs;
     std::stringstream   ss;
     std::string         confLine = "";
@@ -30,6 +48,7 @@ void ServerManager::initParseConfig(std::string filePath) {
         std::cerr << "not open file\n";
     
 }
+
 void    ServerManager::printAll()
 {
     for (std::set<ServerConfig *>::iterator itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++)
@@ -56,6 +75,76 @@ void    ServerManager::printAll()
                     std::cout << value << ' ';
                 }
                 std::cout << "\n";
+            }
+        }
+    }
+}
+
+void 	ServerManager::initializeSocket(int ports[], int size) {
+	_kqueue = kqueue();
+	Log::Verbose("kqueue generated: ( %d )", _kqueue);
+	for (int i = 0; i < size; i++) {
+		Socket* newSocket = new Socket(ports[i]);
+		_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
+		try {
+			newSocket->addKevent(_kqueue, EVFILT_READ);
+		} catch(std::exception& exep) {
+			Log::Verbose(exep.what());
+		}
+		Log::Verbose("Socket Generated: [%d]", ports[i]);
+	}
+}
+
+void	ServerManager::clientAccept(Socket* socket) {
+	Socket* newSocket = socket->acceptClient();
+	_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
+	try {
+		newSocket->addKevent(_kqueue, EVFILT_READ);
+	} catch(std::exception& excep) {
+		Log::Verbose(excep.what());
+	}
+	Log::Verbose("Client Accepted: [%s]", newSocket->getAddr().c_str());
+}
+
+void	ServerManager::read(Socket* socket) {
+	socket->receive();
+}
+
+void	ServerManager::write(Socket* socket) {
+	socket->transmit("suppose to message"); /////////////////
+}
+
+void	ServerManager::run() {
+    const int MaxEvents = 20;
+    struct kevent events[MaxEvents];
+
+    while (_alive == true)
+    {
+        int numbers = kevent(_kqueue, NULL, 0, events, MaxEvents, NULL);
+        if (numbers < 0)
+        {
+            Log::Verbose("Server::run kevent error [%d]", errno);
+            continue;
+        }
+        Log::Verbose("kevent found %d events.", numbers);
+        for (int i = 0; i < numbers; i++)
+        {
+            // struct kevent& event = events[i];
+            int filter = events[i].filter;
+			Socket* eventSocket = _mSocket[events[i].ident];
+
+            try
+            {
+                if (filter == EVFILT_READ && eventSocket->isclient() == false)
+                    clientAccept(eventSocket);
+                else if (filter == EVFILT_READ)
+                    read(eventSocket);
+                else if (filter == EVFILT_WRITE)
+                    write(eventSocket);
+            }
+            catch (const std::exception& excep)
+            {
+                Log::Verbose("Server::run Error [%s]", excep.what());
             }
         }
     }
