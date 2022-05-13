@@ -27,8 +27,7 @@ public:
 	 * 
 	 */
 	void		initParseConfig(std::string configfile);
-        void    printAll();
-        // void    errorParsing(std::string cause) {}
+	// void    errorParsing(std::string cause) {}
 
 	// void		initializeServers();
 	void		initializeSocket(int ports[], int size);

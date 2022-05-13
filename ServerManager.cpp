@@ -51,38 +51,6 @@ void 	ServerManager::initParseConfig(std::string filePath) {
     }
     else
         std::cerr << "not open file\n";
-    
-}
-
-void    ServerManager::printAll()
-{
-    for (std::set<ServerConfig *>::iterator itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++)
-    {
-        std::map<std::string, std::vector<std::string> > sc = (*itr)->getConfigs();
-        std::cout << "\n=========== server origin config ===========\n";
-        for (auto i : sc) {
-            std::cout << "key : "<< i.first << " values : ";
-            for (auto value : i.second) {
-                    std::cout << value << ' ';
-            }
-            std::cout << "\n";
-        }
-        
-        std::set<LocationConfig *> lc = (*itr)->getLocations();
-        for (auto l : lc) {
-            std::string p = l->getPath();
-            std::map<std::string, std::vector<std::string> > msv = l->getHeader();
-            std::cout << "\n=========== location        config ===========\n";
-            std::cout << "path : " << p << '\n';
-            for (auto j : msv) {
-                std::cout << "key : " << j.first << " values : ";
-                for (auto value : j.second) {
-                    std::cout << value << ' ';
-                }
-                std::cout << "\n";
-            }
-        }
-    }
 }
 
 void 	ServerManager::initializeSocket(int ports[], int size) {
