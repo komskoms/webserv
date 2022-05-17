@@ -2,6 +2,8 @@
 #include "Server.hpp"
 #include "Request.hpp"
 
+// default constructor of ServerManager
+//  - Parameters(None)
 ServerManager::ServerManager() :
 _kqueue(-1),
 _alive(true)
@@ -9,6 +11,8 @@ _alive(true)
     Log::Verbose("A ServerManager has been generated.");
 }
 
+// Destructor of ServerManager
+//  - Parameters(None)
 ServerManager::~ServerManager() {
     SocketMapIter   sockIter = _mSocket.begin();
     for (;sockIter != _mSocket.end() ; sockIter++) {
@@ -23,6 +27,12 @@ ServerManager::~ServerManager() {
     // close(_kqueue);
 }
 
+// 전달받은 config file을 파싱
+//  - TODO
+//      - code refactoring
+//  - Parameters
+//      - filePath: config file이 존재하고 있는 경로
+//  - Return(None)
 void    ServerManager::initParseConfig(std::string filePath) {
     std::fstream        fs;
     std::stringstream   ss;
