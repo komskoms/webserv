@@ -26,15 +26,20 @@ public:
 	 * @brief Read and parse configuration file to initialize server.
 	 * 
 	 */
+    void init();
+    void setUpServer();
+
 	void		initParseConfig(std::string configfile);
 	// void    errorParsing(std::string cause) {}
 
-	// void		initializeServers();
+	void		initializeServers();
 	void		initializeSocket(int ports[], int size);
 	void		run();
 
+    Server& getTargetServer(Socket& socket);
+
 private:
-	typedef		std::vector<Server>					ServerVec;
+	typedef		std::vector<Server*>					ServerVec;
 	typedef		std::map<int, Socket*>				SocketMap;
 	typedef		std::map<int, Socket*>::iterator	SocketMapIter;
 	typedef		std::set<ServerConfig *>			ServerConfigSet;

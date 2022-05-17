@@ -1,5 +1,12 @@
 #include "ServerManager.hpp"
+#include "Server.hpp"
+#include "Request.hpp"
 
+Server& ServerManager::getTargetServer(Socket& socket) {
+// TODO implement real behavior
+    (void)socket;
+    return *this->_vServers[0];
+}
 
 ServerManager::ServerManager() :
 _kqueue(-1),
@@ -54,13 +61,12 @@ void 	ServerManager::initParseConfig(std::string filePath) {
 }
 
 void 	ServerManager::initializeSocket(int ports[], int size) {
-	_kqueue = kqueue();
 	Log::Verbose("kqueue generated: ( %d )", _kqueue);
 	for (int i = 0; i < size; i++) {
 		Socket* newSocket = new Socket(ports[i]);
 		_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
 		try {
-			newSocket->addKevent(_kqueue, EVFILT_READ);
+			newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
 		} catch(std::exception& exep) {
 			Log::Verbose(exep.what());
 		}
@@ -72,7 +78,7 @@ void	ServerManager::clientAccept(Socket* socket) {
 	Socket* newSocket = socket->acceptClient();
 	_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
 	try {
-		newSocket->addKevent(_kqueue, EVFILT_READ);
+		newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
 	} catch(std::exception& excep) {
 		Log::Verbose(excep.what());
 	}
@@ -80,11 +86,15 @@ void	ServerManager::clientAccept(Socket* socket) {
 }
 
 void	ServerManager::read(Socket* socket) {
-	socket->receive();
-}
+    std::string line;
 
-void	ServerManager::write(Socket* socket) {
-	socket->transmit("suppose to message"); /////////////////
+	socket->receive();
+
+    socket->addReceivedLine(line);
+    Server& targetServer = this->getTargetServer(*socket);
+
+    if (socket->getRequest().isReady())
+        targetServer.process(*socket, this->_kqueue); 
 }
 
 void	ServerManager::run() {
@@ -111,9 +121,11 @@ void	ServerManager::run() {
                 if (filter == EVFILT_READ && eventSocket->isclient() == false)
                     clientAccept(eventSocket);
                 else if (filter == EVFILT_READ)
-                    read(eventSocket);
-                else if (filter == EVFILT_WRITE)
-                    write(eventSocket);
+                    this->read(eventSocket);
+                else if (filter == EVFILT_WRITE) {
+                    eventSocket->transmit();
+                }
+                    eventSocket->transmit();
             }
             catch (const std::exception& excep)
             {
@@ -121,4 +133,18 @@ void	ServerManager::run() {
             }
         }
     }
+}
+
+void ServerManager::init() {
+    this->setUpServer();
+    this->_kqueue = kqueue();
+
+    int     portsOpen[2] = {2000, 2020};
+    this->initializeSocket(portsOpen, 2);
+}
+
+void ServerManager::setUpServer() {
+    // TODO
+    Server* newServer = new Server("127.0.0.1", 2000, "localhost");
+    this->_vServers.push_back(newServer);
 }

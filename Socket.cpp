@@ -44,14 +44,19 @@ void	Socket::receive() {
 	Log::Verbose("receive works");
 }
 
-void	Socket::transmit(std::string message) {
-	Log::Verbose(message.c_str());
+void	Socket::transmit() {
+    // TODO implement real behavior
+    char buf[10] = "hi";
+    send(this->_ident, buf, 2, 0);
+//     sock.response.mesgae
+//     numnbeOfBytes = ::send(fd, event.udata.message + pos, 남은 크기, 0);
+//     event.udata.pos += numberOfBytes
 }
 
-void	Socket::addKevent(int kqueue, int filter) {
+void	Socket::addKevent(int kqueue, int filter, void* udata) {
 	struct kevent	ev;
 
-	EV_SET(&ev, _ident, filter, EV_ADD | EV_ENABLE, 0, 0, 0);
+	EV_SET(&ev, _ident, filter, EV_ADD | EV_ENABLE, 0, 0, udata);
 	if (kevent(kqueue, &ev, 1, 0, 0, 0) < 0)
 		throw std::runtime_error("kevent Failed.");
 }

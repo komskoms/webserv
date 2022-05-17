@@ -22,6 +22,9 @@ using std::endl;
 const int NORMAL = 0;
 const int ERROR = -1;
 
+static void initMethod(Request::Method& method, const std::string& token);
+static int initVersion(char& major_version, char& minor_version, const std::string& token);
+
 void Request::parse() {
     std::stringstream ss(this->message);
     std::string token;
@@ -72,8 +75,8 @@ char Request::getMinorVersion() const {
     return this->_minor_version;
 }
 
+bool Request::isReady() const {
 // TODO implement real behavior
-bool Request::isReadyToService() {
     return true;
 }
 
@@ -85,8 +88,36 @@ void Request::describe(std::ostream& out) const {
     out << endl;
 
     out << "_headerFieldMap:" << endl;
-    describeStringMap(out, this->_headerFieldMap);
     out << endl;
 
     out << "_body: [" << this->_body << "]" << endl;
+}
+static void initMethod(Request::Method& method, const std::string& token) {
+    if (token == "GET")
+        method = Request::METHOD_GET;
+    else if (token == "POST")
+        method = Request::METHOD_POST;
+    else if (token == "DELETE")
+        method = Request::METHOD_DELETE;
+    else
+        assert(false);
+}
+
+static int initVersion(char& major_version, char& minor_version, const std::string& token) {
+    if (token.length() != 8)
+        return ERROR;
+
+    if (token.substr(0, 5) != "HTTP/")
+        return ERROR;
+
+    if (token[6] != '.')
+        return ERROR;
+
+    if (!isdigit(token[5]) || !isdigit(token[7]))
+        return ERROR;
+
+    major_version = token[5];
+    minor_version = token[7];
+
+    return NORMAL;
 }
