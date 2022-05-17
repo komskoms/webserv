@@ -1,10 +1,10 @@
 #include "Log.hpp"
 
 void PrintfPrefixed(const char* prefix, const char* format, va_list& va) {
-	std::cout << prefix;
-	std::cout << std::setw(20) << std::right << ":: ";
-	std::vfprintf(stdout, format, va);
-	std::cout << std::endl;
+    std::cout << prefix;
+    std::cout << std::setw(20) << std::right << ":: ";
+    std::vfprintf(stdout, format, va);
+    std::cout << std::endl;
 
     // std::cout << "[";
     // print_time();
@@ -20,8 +20,8 @@ void PrintfPrefixed(const char* prefix, const char* format, va_list& va) {
 }
 
 void Log::Verbose(const char* format, ...) {
-	va_list	va;
-	va_start(va, format);
-	PrintfPrefixed("[Vervose]", format, va);
-	va_end(va);
+    va_list va;
+    va_start(va, format);
+    PrintfPrefixed("[Vervose]", format, va);
+    va_end(va);
 }

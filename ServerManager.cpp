@@ -12,25 +12,25 @@ ServerManager::ServerManager() :
 _kqueue(-1),
 _alive(true)
 {
-	Log::Verbose("A ServerManager has been generated.");
+    Log::Verbose("A ServerManager has been generated.");
 }
 
 ServerManager::~ServerManager() {
-	SocketMapIter	sockIter = _mSocket.begin();
-	for (;sockIter != _mSocket.end() ; sockIter++) {
-		delete sockIter->second;
-	}
+    SocketMapIter   sockIter = _mSocket.begin();
+    for (;sockIter != _mSocket.end() ; sockIter++) {
+        delete sockIter->second;
+    }
 
     for (std::set<ServerConfig *>::iterator itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
         delete *itr;
     }
 
-	Log::Verbose("All Sockets has been deleted.");
-	// close(_kqueue);
+    Log::Verbose("All Sockets has been deleted.");
+    // close(_kqueue);
 }
 
 
-void 	ServerManager::initParseConfig(std::string filePath) {
+void    ServerManager::initParseConfig(std::string filePath) {
     std::fstream        fs;
     std::stringstream   ss;
     std::string         confLine = "";
@@ -60,35 +60,35 @@ void 	ServerManager::initParseConfig(std::string filePath) {
         std::cerr << "not open file\n";
 }
 
-void 	ServerManager::initializeSocket(int ports[], int size) {
-	Log::Verbose("kqueue generated: ( %d )", _kqueue);
-	for (int i = 0; i < size; i++) {
-		Socket* newSocket = new Socket(ports[i]);
-		_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
-		try {
-			newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
-		} catch(std::exception& exep) {
-			Log::Verbose(exep.what());
-		}
-		Log::Verbose("Socket Generated: [%d]", ports[i]);
-	}
+void    ServerManager::initializeSocket(int ports[], int size) {
+    Log::Verbose("kqueue generated: ( %d )", _kqueue);
+    for (int i = 0; i < size; i++) {
+        Socket* newSocket = new Socket(ports[i]);
+        _mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
+        try {
+            newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
+        } catch(std::exception& exep) {
+            Log::Verbose(exep.what());
+        }
+        Log::Verbose("Socket Generated: [%d]", ports[i]);
+    }
 }
 
-void	ServerManager::clientAccept(Socket* socket) {
-	Socket* newSocket = socket->acceptClient();
-	_mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
-	try {
-		newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
-	} catch(std::exception& excep) {
-		Log::Verbose(excep.what());
-	}
-	Log::Verbose("Client Accepted: [%s]", newSocket->getAddr().c_str());
+void    ServerManager::clientAccept(Socket* socket) {
+    Socket* newSocket = socket->acceptClient();
+    _mSocket.insert(std::make_pair(newSocket->getIdent(), newSocket));
+    try {
+        newSocket->addKevent(_kqueue, EVFILT_READ, NULL);
+    } catch(std::exception& excep) {
+        Log::Verbose(excep.what());
+    }
+    Log::Verbose("Client Accepted: [%s]", newSocket->getAddr().c_str());
 }
 
-void	ServerManager::read(Socket* socket) {
+void    ServerManager::read(Socket* socket) {
     std::string line;
 
-	socket->receive();
+    socket->receive();
 
     socket->addReceivedLine(line);
     Server& targetServer = this->getTargetServer(*socket);
@@ -97,7 +97,7 @@ void	ServerManager::read(Socket* socket) {
         targetServer.process(*socket, this->_kqueue); 
 }
 
-void	ServerManager::run() {
+void    ServerManager::run() {
     const int MaxEvents = 20;
     struct kevent events[MaxEvents];
 
@@ -114,7 +114,7 @@ void	ServerManager::run() {
         {
             // struct kevent& event = events[i];
             int filter = events[i].filter;
-			Socket* eventSocket = _mSocket[events[i].ident];
+            Socket* eventSocket = _mSocket[events[i].ident];
 
             try
             {

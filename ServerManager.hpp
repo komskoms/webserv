@@ -19,49 +19,49 @@
 
 class ServerManager {
 public:
-	ServerManager();
+    ServerManager();
     ~ServerManager();
 
-	/**
-	 * @brief Read and parse configuration file to initialize server.
-	 * 
-	 */
+    /**
+     * @brief Read and parse configuration file to initialize server.
+     * 
+     */
     void init();
     void setUpServer();
 
-	void		initParseConfig(std::string configfile);
-	// void    errorParsing(std::string cause) {}
+    void        initParseConfig(std::string configfile);
+    // void    errorParsing(std::string cause) {}
 
-	void		initializeServers();
-	void		initializeSocket(int ports[], int size);
-	void		run();
+    void        initializeServers();
+    void        initializeSocket(int ports[], int size);
+    void        run();
 
     Server& getTargetServer(Socket& socket);
 
 private:
-	typedef		std::vector<Server*>					ServerVec;
-	typedef		std::map<int, Socket*>				SocketMap;
-	typedef		std::map<int, Socket*>::iterator	SocketMapIter;
-	typedef		std::set<ServerConfig *>			ServerConfigSet;
+    typedef     std::vector<Server*>                    ServerVec;
+    typedef     std::map<int, Socket*>              SocketMap;
+    typedef     std::map<int, Socket*>::iterator    SocketMapIter;
+    typedef     std::set<ServerConfig *>            ServerConfigSet;
 
-	ServerConfigSet			_defaultConfigs;    // 서버마다 속성값 다르기에 구분
-	ServerVec				_vServers;
-	SocketMap				_mSocket;
-	int						_kqueue;
-	bool					_alive;
+    ServerConfigSet         _defaultConfigs;    // 서버마다 속성값 다르기에 구분
+    ServerVec               _vServers;
+    SocketMap               _mSocket;
+    int                     _kqueue;
+    bool                    _alive;
 
-	/**
-	 * @brief Generate new Server object as configurated and register to the Server container.
-	 * 
-	 */
-	void		makeServer(ServerConfig* serverConf);
+    /**
+     * @brief Generate new Server object as configurated and register to the Server container.
+     * 
+     */
+    void        makeServer(ServerConfig* serverConf);
 
 
-	void		clientAccept(Socket* socket);
-	void		read(Socket* socket);
-	void		write(Socket* socket);
+    void        clientAccept(Socket* socket);
+    void        read(Socket* socket);
+    void        write(Socket* socket);
 
-	Server*	selectServer(/* Request Object */);
+    Server* selectServer(/* Request Object */);
 
 };
 

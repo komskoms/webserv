@@ -15,7 +15,7 @@ class Log {
 private:
 
 public:
-	static void Verbose(const char* format, ...);
+    static void Verbose(const char* format, ...);
 };
 
 
