@@ -2,34 +2,35 @@
 #define SERVER_HPP_
 
 #include <string>
-#include <vector>
-#include <map>
-#include <sys/event.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include "Socket.hpp"
 #include "Request.hpp"
 
+//  TODO Add member variable from server config.
+//  Server is the entity processing request from client.
+//  - Member variables
+//      _sinAddress: The ip address of server.
+//      _portNumber: The port number of server.
+//      _serverName: The server name.
+//
+//      _sock: The socket to accept client for this server.
 class Server {
 public:
-        Server(const char* ipAddress, in_port_t portNumber, const std::string& serverName)
-        : portNumber(portNumber), serverName(serverName) { inet_pton(AF_INET, ipAddress, &this->sinAddress); };
+    Server(const char* ipAddress, short portNumber, const std::string& _serverName);
 
-    in_port_t getPortNumber() const { return this->portNumber; };
-    void setSock(Socket* sock) { this->sock = sock; };
+    in_port_t getPortNumber() const { return this->_portNumber; };
+    void setSock(Socket* sock) { this->_sock = sock; };
 
-    void process(Socket& socket, int kqueueFD) const;
+    void process(Socket& clientSocket, int kqueueFD) const;
 
 private:
-    struct in_addr sinAddress;
-    in_port_t portNumber;
-    std::string serverName;
+    struct in_addr _sinAddress;
+    short _portNumber;
+    std::string _serverName;
 
-    // 다른 많은 설정값
-
-    Socket* sock;
+    Socket* _sock;
 };
 
-#endif
+#endif  // SERVER_HPP_

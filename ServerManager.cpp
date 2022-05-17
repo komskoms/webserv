@@ -2,12 +2,6 @@
 #include "Server.hpp"
 #include "Request.hpp"
 
-Server& ServerManager::getTargetServer(Socket& socket) {
-// TODO implement real behavior
-    (void)socket;
-    return *this->_vServers[0];
-}
-
 ServerManager::ServerManager() :
 _kqueue(-1),
 _alive(true)
@@ -28,7 +22,6 @@ ServerManager::~ServerManager() {
     Log::Verbose("All Sockets has been deleted.");
     // close(_kqueue);
 }
-
 
 void    ServerManager::initParseConfig(std::string filePath) {
     std::fstream        fs;
@@ -58,6 +51,23 @@ void    ServerManager::initParseConfig(std::string filePath) {
     }
     else
         std::cerr << "not open file\n";
+}
+
+//  TODO Implement real behavior.
+//  Initialize server manager from server config set.
+void ServerManager::init() {
+    this->initializeServers();
+    this->_kqueue = kqueue();
+
+    int     portsOpen[2] = {2000, 2020};
+    this->initializeSocket(portsOpen, 2);
+}
+
+//  TODO Implement real behavior.
+//  Initialize all servers from server config set.
+void ServerManager::initializeServers() {
+    Server* newServer = new Server("127.0.0.1", 2000, "localhost");
+    this->_vServers.push_back(newServer);
 }
 
 void    ServerManager::initializeSocket(int ports[], int size) {
@@ -97,6 +107,16 @@ void    ServerManager::read(Socket* socket) {
         targetServer.process(*socket, this->_kqueue); 
 }
 
+//  TODO Implement real behavior
+//  Return appropriate server to process client socket.
+//  - Parameters
+//      clientSocket: The socket for client.
+//  - Returns: Appropriate server to process client socket.
+Server& ServerManager::getTargetServer(Socket& clientSocket) {
+    (void)clientSocket;
+    return *this->_vServers[0];
+}
+
 void    ServerManager::run() {
     const int MaxEvents = 20;
     struct kevent events[MaxEvents];
@@ -125,7 +145,6 @@ void    ServerManager::run() {
                 else if (filter == EVFILT_WRITE) {
                     eventSocket->transmit();
                 }
-                    eventSocket->transmit();
             }
             catch (const std::exception& excep)
             {
@@ -133,18 +152,4 @@ void    ServerManager::run() {
             }
         }
     }
-}
-
-void ServerManager::init() {
-    this->setUpServer();
-    this->_kqueue = kqueue();
-
-    int     portsOpen[2] = {2000, 2020};
-    this->initializeSocket(portsOpen, 2);
-}
-
-void ServerManager::setUpServer() {
-    // TODO
-    Server* newServer = new Server("127.0.0.1", 2000, "localhost");
-    this->_vServers.push_back(newServer);
 }

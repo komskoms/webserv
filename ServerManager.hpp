@@ -27,16 +27,16 @@ public:
      * 
      */
     void init();
-    void setUpServer();
 
     void        initParseConfig(std::string configfile);
     // void    errorParsing(std::string cause) {}
 
     void        initializeServers();
     void        initializeSocket(int ports[], int size);
+
+    Server&     getTargetServer(Socket& socket);
     void        run();
 
-    Server& getTargetServer(Socket& socket);
 
 private:
     typedef     std::vector<Server*>                    ServerVec;
@@ -65,4 +65,4 @@ private:
 
 };
 
-#endif
+#endif  // SERVERMANAGER_HPP_

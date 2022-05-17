@@ -31,7 +31,7 @@ public:
     int             getPort();
     std::string     getHTTPMessage();
     const Request&  getRequest() const { return this->_request; };
-    void addReceivedLine(const std::string& line) { this->_request.addLine(line); };
+    void addReceivedLine(const std::string& line) { this->_request.appendMessage(line); };
 
 private:
     bool            _client;

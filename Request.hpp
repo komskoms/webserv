@@ -1,30 +1,21 @@
 #ifndef REQUEST_HPP_
 #define REQUEST_HPP_
 
-#include <iostream>
 #include <map>
-#include <vector>
-
-#include <arpa/inet.h>  // inet_addr()
-#include <netinet/in.h> // struct sockaddr_in
-#include <sys/socket.h> // socket(), accept(), listen(), bind(), connect(), recv()
-#include <sys/time.h>   // struct timespec
-#include <fcntl.h>  // fcntl()
-#include <sys/event.h>  // struct kevent, kevent()
-#include <unistd.h>
+#include <string>
 
 typedef std::map<std::string, std::string> StringMap;
 
-// class to store data of HTTP request message.
-// Example:
-//  // example of data in request_string
-//  // "GET /index.html HTTP/1.1
-//  //  Host: localhost
-//  //
-//  //  ";
-//  Request request(request_string);
-//  if (request.getMethod() == Request::METHOD_GET)
-//      server.runMessage(request, response);
+//  Accumulate HTTP request message and parse it and store.
+//  - member variables
+//      _message: Accumulate HTTP request message.
+//
+//      _method: Parsed request method.
+//      _target: Parsed target resource URI.
+//      _majorVersion: Parsed major version.
+//      _minorVersion: Parsed major version.
+//      _headerFieldMap: Parsed header field map.
+//      _body: Parsed payload body.
 class Request {
 public:
     enum Method {
@@ -33,26 +24,22 @@ public:
         METHOD_DELETE,
     };
 
-    void append(const char* str) { this->message += str; };
-    void parse();
+    Method getMethod() const { return this->_method; };
+    char getMajorVersion() const { return this->_majorVersion; };
+    char getMinorVersion() const { return this->_minorVersion; };
 
-    Method getMethod() const;
-    char getMajorVersion() const;
-    char getMinorVersion() const;
+    void appendMessage(const std::string& str) { this->_message += str; };
+    void parse();
 
     bool isReady() const;
 
-    void describe(std::ostream& out) const; // this is for debug usage
-
-    void addLine(const std::string& line) { this->message += line; };
-
 private:
-    std::string message;
+    std::string _message;
 
     Method _method;
-    std::string _request_target;
-    char _major_version;
-    char _minor_version;
+    std::string _target;
+    char _majorVersion;
+    char _minorVersion;
 
     StringMap _headerFieldMap;
 
