@@ -74,10 +74,50 @@ void FTServer::init() {
 }
 
 //  TODO Implement real behavior.
-//  Initialize all servers from server config set.
+//  Initialize all virtual servers from virtual server config set.
 void FTServer::initializeVirtualServers() {
-    VirtualServer* newVirtualServer = new VirtualServer(2000, "localhost");
-    this->_vVirtualServers.push_back(newVirtualServer);
+    //  VirtualServer* newVirtualServer = new VirtualServer("127.0.0.1", 2000, "localhost");
+    // NOTE only normal configs
+    for (VirtualServerConfigIter itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++) {
+        VirtualServer* newVirtualServer = this->makeVirtualServer(*itr);
+        this->_vVirtualServers.push_back(newVirtualServer);
+    }
+}
+
+//  TODO Implement real one virtual server using config
+VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServerConf) {
+    VirtualServer* newVirtualServer;
+    directiveContainer config = virtualServerConf->getConfigs();           // original config in server Block
+    std::set<LocationConfig *> locs = virtualServerConf->getLocations();   // config per location block
+
+    // server block
+    for (directiveContainer::iterator itr = config.begin(); itr != config.end(); itr++) {
+        std::cout << itr->first << " : ";
+        for (size_t i = 0; i < itr->second.size(); i++)
+            std::cout << itr->second[i] << " ";
+        std::cout << std::endl;
+    }
+    // location block
+    for (std::set<LocationConfig *>::iterator itr = locs.begin(); itr != locs.end(); itr++) {
+        std::cout << "path : " << (*itr)->getPath() << std::endl;
+        directiveContainer tmp = (*itr)->getDirectives();
+        for (directiveContainer::iterator itr2 = tmp.begin(); itr2 != tmp.end(); itr2++) {
+            std::cout << itr2->first << " : ";
+            for (size_t i = 0; i < itr2->second.size(); i++)
+                std::cout << itr2->second[i] << " ";
+            std::cout << std::endl;
+        }
+    }
+    newVirtualServer = new VirtualServer(static_cast<in_port_t>(std::atoi(config["listen"].front().c_str())),
+                            config["server_name"].front());
+    // NODE how to runnig -> listen 127.0.0.1:80
+    // just port
+    // newVirtualServer->setPortNumber(static_cast<in_port_t>(std::atoi(config["listen"].front().c_str())));
+    
+    // Note single server_name
+    // newVirtualServer->setVirtualServerName(config["server_name"].front());
+    // newVirtualServer->setAddrStruct("127.0.0.1");
+    return newVirtualServer;
 }
 
 void FTServer::initializeConnection(int ports[], int size) {

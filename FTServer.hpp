@@ -46,6 +46,7 @@ private:
     typedef std::map<int, Connection*>           ConnectionMap;
     typedef std::map<int, Connection*>::iterator ConnectionMapIter;
     typedef std::set<VirtualServerConfig *>         VirtualServerConfigSet;
+    typedef std::set<VirtualServerConfig *>::iterator VirtualServerConfigIter;
 
     VirtualServerConfigSet _defaultConfigs;
     VirtualServerVec _vVirtualServers;
@@ -53,7 +54,7 @@ private:
     int _kqueue;
     bool _alive;
 
-    void makeVirtualServer(VirtualServerConfig* serverConf);
+    VirtualServer* makeVirtualServer(VirtualServerConfig* serverConf);
     void clientAccept(Connection* connection);
     void read(Connection* connection);
     void write(Connection* connection);
