@@ -1,3 +1,4 @@
+#include <cassert>
 #include "FTServer.hpp"
 #include "VirtualServer.hpp"
 #include "Request.hpp"
@@ -105,24 +106,40 @@ void FTServer::clientAccept(Connection* connection) {
     Log::Verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
 
+//  Read and process requested by client.
+//  - Parameters connection: The connection to read from.
+//  - Return(None)
 void FTServer::read(Connection* connection) {
-    std::string line;
+    ReturnCaseOfRecv result = connection->receive();
 
-    connection->receive();
-
-    connection->addReceivedLine(line);
-    VirtualServer& targetVirtualServer = this->getTargetVirtualServer(*connection);
-
-    if (connection->getRequest().isReady())
-        targetVirtualServer.process(*connection, this->_kqueue); 
+    switch (result) {
+        case RCRECV_ERROR:
+            //  TODO Implement behavior
+            break;
+        case RCRECV_ZERO:
+            //  TODO Implement behavior
+            break;
+        case RCRECV_SOME:
+            break;
+        case RCRECV_PARSING_FAIL:
+            //  TODO Implement behavior
+            break;
+        case RCRECV_PARSING_SUCCESS:
+            VirtualServer& targetVirtualServer = this->getTargetVirtualServer(*connection);
+            targetVirtualServer.process(*connection, this->_kqueue);
+            break;
+        defaut:
+            assert(false);
+            break;
+    }
 }
 
-//  TODO Implement real behavior
 //  Return appropriate server to process client connection.
 //  - Parameters
 //      clientConnection: The connection for client.
 //  - Returns: Appropriate server to process client connection.
 VirtualServer& FTServer::getTargetVirtualServer(Connection& clientConnection) {
+    //  TODO Implement real behavior. Change the return type from reference to pointer type.
     (void)clientConnection;
     return *this->_vVirtualServers[0];
 }

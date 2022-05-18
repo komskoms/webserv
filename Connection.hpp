@@ -11,8 +11,6 @@
 #include "Request.hpp"
 #include "Response.hpp"
 
-#define TCP_MTU 1500
-
 //  General coonection handler, from generation communication.
 //   - TODO
 //      Connection should handle the receiving and transmiting without malfunction.
@@ -30,7 +28,7 @@ public:
     Connection(int port);
 
     Connection* acceptClient();
-    void receive();
+    ReturnCaseOfRecv receive();
     void transmit();
     void addKevent(int kqueue, int filter, void* udata);
 
@@ -39,7 +37,6 @@ public:
     std::string getAddr() { return this->_addr; };
     int getPort() { return this->_port; };
     const Request& getRequest() const { return this->_request; };
-    void addReceivedLine(const std::string& line) { this->_request.appendMessage(line); };
     void setResponse();
 
 private:

@@ -34,11 +34,8 @@ Connection* Connection::acceptClient() {
     return new Connection(clientfd, addr, remoteaddr.sin_port);
 }
 
-void Connection::receive() {
-    unsigned char buffer[TCP_MTU];
-
-    recv(_ident, buffer, TCP_MTU, 0);
-    Log::Verbose("receive works");
+ReturnCaseOfRecv Connection::receive() {
+    return this->_request.receive(this->_ident);
 }
 
 //  Send response message to client.
