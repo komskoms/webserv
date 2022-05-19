@@ -76,7 +76,7 @@ void ServerManager::init() {
 //  TODO Implement real behavior.
 //  Initialize all servers from server config set.
 void ServerManager::initializeServers() {
-    Server* newServer = new Server("127.0.0.1", 2000, "localhost");
+    Server* newServer = new Server(2000, "localhost");
     this->_vServers.push_back(newServer);
 }
 

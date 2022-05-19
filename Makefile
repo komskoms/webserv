@@ -11,6 +11,7 @@ SRCS        =	ServerConfig.cpp \
 				Log.cpp \
 				Request.cpp \
 				LocationConfig.cpp \
+				Location.cpp \
 				Server.cpp \
 				ServerManager.cpp \
 				Socket.cpp \
