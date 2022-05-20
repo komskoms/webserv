@@ -3,9 +3,9 @@
 Connection::Connection(int port)
 : _client(false)
 , _port(port) {
-    setNewConnection();
-    bindThisConnection();
-    listenThisConnection();
+    newSocket();
+    bindSocket();
+    listenSocket();
 }
 
 Connection::Connection(int ident, std::string addr, int port)
@@ -57,7 +57,7 @@ void Connection::addKevent(int kqueue, int filter, void* udata) {
         throw std::runtime_error("kevent Failed.");
 }
 
-void Connection::setNewConnection() {
+void Connection::newSocket() {
     int     newConnection = socket(PF_INET, SOCK_STREAM, 0);
     int     enable = 1;
 
@@ -72,7 +72,7 @@ void Connection::setNewConnection() {
     _ident = newConnection;
 }
 
-static void setConnectionAddr(int port, sockaddr_in& addr_in) {
+static void setAddrStruct(int port, sockaddr_in& addr_in) {
     std::memset(&addr_in, 0, sizeof(addr_in));
     addr_in.sin_family = PF_INET;
     addr_in.sin_port = htons(port);
@@ -80,10 +80,10 @@ static void setConnectionAddr(int port, sockaddr_in& addr_in) {
     Log::Verbose("Connectionadd struct has been setted");
 }
 
-void Connection::bindThisConnection() {
+void Connection::bindSocket() {
     sockaddr*   addr;
     sockaddr_in addr_in;
-    setConnectionAddr(_port, addr_in);
+    setAddrStruct(_port, addr_in);
     addr = reinterpret_cast<sockaddr*>(&addr_in);
     if (0 > bind(_ident, addr, sizeof(*addr))) {
         throw;
@@ -91,7 +91,7 @@ void Connection::bindThisConnection() {
     Log::Verbose("Connection ( %d ) bind succeed.", socket);
 }
 
-void Connection::listenThisConnection() {
+void Connection::listenSocket() {
     if (0 > listen(_ident, 10)) {
         throw;
     }

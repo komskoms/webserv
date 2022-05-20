@@ -50,9 +50,9 @@ private:
 
     Connection(int ident, std::string addr, int port);
 
-    void setNewConnection();
-    void bindThisConnection();
-    void listenThisConnection();
+    void newSocket();
+    void bindSocket();
+    void listenSocket();
 };
 
 #endif  // CONNECTION_HPP_
