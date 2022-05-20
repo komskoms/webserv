@@ -1,5 +1,5 @@
-#ifndef SOCKET_HPP_
-#define SOCKET_HPP_
+#ifndef CONNECTION_HPP_
+#define CONNECTION_HPP_
 
 #include "Log.hpp"
 #include <string>
@@ -12,9 +12,9 @@
 
 #define TCP_MTU 1500
 
-//  General socket handler, from generation communication.
+//  General coonection handler, from generation communication.
 //   - TODO
-//      Socket should handle the receiving and transmiting without malfunction.
+//      Connection should handle the receiving and transmiting without malfunction.
 //      소켓이 수신 결과를 Request객체로 저장할 수 있어야 함.
 //      소켓이 Response객체를 이용해 송신을 처리할 수 있어야 함.
 //   - Member Variables
@@ -24,11 +24,11 @@
 //      _port
 //      _request
 //   - Methods
-class Socket {
+class Connection {
 public:
-    Socket(int port);
+    Connection(int port);
 
-    Socket* acceptClient();
+    Connection* acceptClient();
     void receive();
     void transmit();
     void addKevent(int kqueue, int filter, void* udata);
@@ -48,11 +48,11 @@ private:
     Request _request;
     // Response _response;
 
-    Socket(int ident, std::string addr, int port);
+    Connection(int ident, std::string addr, int port);
 
-    void setNewSocket();
-    void bindThisSocket();
-    void listenThisSocket();
+    void setNewConnection();
+    void bindThisConnection();
+    void listenThisConnection();
 };
 
-#endif
+#endif  // CONNECTION_HPP_

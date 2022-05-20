@@ -7,14 +7,14 @@ DEBUG       = -g
 INC         =	-I .
 
 
-SRCS        =	ServerConfig.cpp \
+SRCS        =	VirtualServerConfig.cpp \
 				Log.cpp \
 				Request.cpp \
 				LocationConfig.cpp \
 				Location.cpp \
-				Server.cpp \
-				ServerManager.cpp \
-				Socket.cpp \
+				VirtualServer.cpp \
+				FTServer.cpp \
+				Connection.cpp \
 				main.cpp
 
 #				Request.cpp
