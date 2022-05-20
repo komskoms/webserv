@@ -19,8 +19,8 @@ FTServer::~FTServer() {
         delete connectionIter->second;
     }
 
-    for (std::set<VirtualServerConfig *>::iterator itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
-        delete *itr;
+    for (VirtualServerConfigIter itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
+        delete itr->second;
     }
 
     Log::Verbose("All Connections has been deleted.");
@@ -51,9 +51,15 @@ void FTServer::initParseConfig(std::string filePath) {
             }
             else if (token == "server") {
                 sc = new VirtualServerConfig();
-                if(!sc->parsing(fs, ss, confLine)) // fstream, stringstream를 전달해주는 방식으로 진행
+                if (!sc->parsing(fs, ss, confLine)) // fstream, stringstream를 전달해주는 방식으로 진행
                     std::cerr << "not parsing config\n"; // 각 요소별 동적할당 해제시켜주는게 중요
-                this->_defaultConfigs.insert(sc);
+                ServerConfigKey *key = new ServerConfigKey;
+                directiveContainer tConfigs = sc->getConfigs();
+                if (tConfigs.find("server_name") != tConfigs.end())
+                    key->_server_name = tConfigs.find("server_name")->second;
+                if (tConfigs.find("listen") != tConfigs.end())
+                    key->_port = tConfigs.find("listen")->second[0]; // server_name이랑 port 갖고와서 _defaultconfig insert할 때 key로 넣어줘야함
+                this->_defaultConfigs.insert(std::pair<ServerConfigKey*, VirtualServerConfig *>(key, sc)); // map
             } else
                 std::cerr << "not match (token != server)\n"; // (TODO) 오류터졌을 때 동적할당 해제 해줘야함
             ss.clear();
@@ -79,7 +85,7 @@ void FTServer::initializeVirtualServers() {
     //  VirtualServer* newVirtualServer = new VirtualServer("127.0.0.1", 2000, "localhost");
     // NOTE only normal configs
     for (VirtualServerConfigIter itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++) {
-        VirtualServer* newVirtualServer = this->makeVirtualServer(*itr);
+        VirtualServer* newVirtualServer = this->makeVirtualServer(itr->second);
         this->_vVirtualServers.push_back(newVirtualServer);
     }
 }
