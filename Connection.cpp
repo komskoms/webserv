@@ -1,3 +1,4 @@
+#include <cassert>
 #include "Connection.hpp"
 
 Connection::Connection(int port)
@@ -40,13 +41,25 @@ void Connection::receive() {
     Log::Verbose("receive works");
 }
 
-void Connection::transmit() {
-    // TODO implement real behavior
-    char buf[10] = "hi";
-    send(this->_ident, buf, 2, 0);
-//     sock.response.mesgae
-//     numnbeOfBytes = ::send(fd, event.udata.message + pos, 남은 크기, 0);
-//     event.udata.pos += numberOfBytes
+//  Send response message to client.
+void    Connection::transmit() {
+    const int returnValue = this->_response.sendResponseMessage(this->_ident);
+    switch (returnValue) {
+        case -1:
+            // TODO Implement behavior.
+            break;
+        case 0:
+            // TODO Implement behavior.
+            break;
+        case 1:
+            break;
+        case 2:
+            // TODO Implement behavior.
+            break;
+        default:
+            assert(false);
+            break;
+    }
 }
 
 void Connection::addKevent(int kqueue, int filter, void* udata) {
@@ -96,4 +109,14 @@ void Connection::listenSocket() {
         throw;
     }
     Log::Verbose("Listening from Connection ( %d ), Port ( %d ).", _ident);
+}
+
+//  Set socket's response message.
+//  If you want to append response message in Server object rather than in
+//  Socket object, make a method named
+//  Socket::appendResponseMessage(const char* message) which is calling
+//  this->_response.appendMessage(message).
+void Connection::setResponse() {
+    //  TODO Implement real behavior.
+    this->_response.appendMessage("HTTP/1.1 418 Custom Response\nServer: webserv\nDate: What time is it now?\nContent-Type: text/html\nContent-Length: 176\nConnection: close\n\n<html>\n<head><title>418 Custom Response</title></head>\n<body bgcolor=\"white\">\n<center><h1>418 Custom Response</h1></center>\n<hr><center>webserv</center>\n</body>\n</html>");
 }

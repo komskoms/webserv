@@ -13,5 +13,7 @@ VirtualServer::VirtualServer(short portNumber, const std::string& name)
 //      clientConnection: The connection of client requesting process.
 //      kqueueFD: The kqueue fd is where to add write event for response.
 void VirtualServer::process(Connection& clientConnection, int kqueueFD) const {
+    // TODO Process request in clientConnection, and set response._message in clientConnection.
+    clientConnection.setResponse();
     clientConnection.addKevent(kqueueFD, EVFILT_WRITE, NULL);
 }
