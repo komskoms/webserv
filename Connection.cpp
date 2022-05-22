@@ -42,18 +42,20 @@ void Connection::receive() {
 }
 
 //  Send response message to client.
+//  - Parameters(None)
+//  - Return(None)
 void    Connection::transmit() {
     const int returnValue = this->_response.sendResponseMessage(this->_ident);
     switch (returnValue) {
-        case -1:
+        case RCSEND_ERROR:
             // TODO Implement behavior.
             break;
-        case 0:
+        case RCSEND_ZERO:
             // TODO Implement behavior.
             break;
-        case 1:
+        case RCSEND_SOME:
             break;
-        case 2:
+        case RCSEND_ALL:
             // TODO Implement behavior.
             break;
         default:
