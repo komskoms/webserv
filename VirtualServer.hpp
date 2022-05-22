@@ -40,7 +40,7 @@ private:
     std::size_t _clientMaxBodySize;
     std::vector<Location*> _location;
 
-    std::map<std::string, std::string> others;
+    std::map<std::string, std::string> _others;
 
     Connection* _connection;
 };

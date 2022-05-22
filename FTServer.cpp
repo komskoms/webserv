@@ -128,7 +128,7 @@ void FTServer::read(Connection* connection) {
             VirtualServer& targetVirtualServer = this->getTargetVirtualServer(*connection);
             targetVirtualServer.process(*connection, this->_kqueue);
             break;
-        defaut:
+        default:
             assert(false);
             break;
     }

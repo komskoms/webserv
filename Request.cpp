@@ -14,8 +14,8 @@ Request::~Request() {
 //  Returns first header field value of name.
 //  - Parameters name: The name to search value.
 //  - Return: The first header field value of name
-const std::string* Request::getFirstHeaderFieldValueByName(const std::string& name) {
-    for (HeaderSectionType::iterator iter = this->_headerSection.begin(); iter != this->_headerSection.end(); ++iter)
+const std::string* Request::getFirstHeaderFieldValueByName(const std::string& name) const {
+    for (HeaderSectionType::const_iterator iter = this->_headerSection.begin(); iter != this->_headerSection.end(); ++iter)
         if ((*iter)->first == name)
             return &(*iter)->second;
 
@@ -33,7 +33,7 @@ ReturnCaseOfRecv Request::receive(int clientSocketFD) {
         return RCRECV_ZERO;
 
     if (this->isReadyToProcess()) {
-        if (this->parseMessage() == PR_SUCCESS) // TODO Pass valid string to parseMessage and left remain string.
+        if (this->parseMessage() == PR_SUCCESS) //  TODO Pass valid string to parseMessage and left remain string.
             return RCRECV_PARSING_SUCCESS;
         else
             return RCRECV_PARSING_FAIL;
