@@ -50,9 +50,6 @@ void    Connection::transmit() {
         case RCSEND_ERROR:
             // TODO Implement behavior.
             break;
-        case RCSEND_ZERO:
-            // TODO Implement behavior.
-            break;
         case RCSEND_SOME:
             break;
         case RCSEND_ALL:
