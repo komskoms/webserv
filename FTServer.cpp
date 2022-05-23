@@ -19,8 +19,8 @@ FTServer::~FTServer() {
         delete connectionIter->second;
     }
 
-    for (std::set<VirtualServerConfig *>::iterator itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
-        delete *itr;
+    for (VirtualServerConfigIter itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
+        delete itr->second;
     }
 
     Log::Verbose("All Connections has been deleted.");
@@ -51,9 +51,22 @@ void FTServer::initParseConfig(std::string filePath) {
             }
             else if (token == "server") {
                 sc = new VirtualServerConfig();
-                if(!sc->parsing(fs, ss, confLine)) // fstream, stringstream를 전달해주는 방식으로 진행
+                if (!sc->parsing(fs, ss, confLine)) // fstream, stringstream를 전달해주는 방식으로 진행
                     std::cerr << "not parsing config\n"; // 각 요소별 동적할당 해제시켜주는게 중요
-                this->_defaultConfigs.insert(sc);
+                ServerConfigKey key;
+                directiveContainer tConfigs = sc->getConfigs();
+                if (tConfigs.find("server_name") != tConfigs.end())
+                    key._server_name.push_back(tConfigs.find("server_name")->second[0]); // 가장 먼저 입력된 server_name 1개만
+                else
+                    key._server_name.push_back(""); // server_name 비어있는 경우 "" 설정(안건)
+                if (tConfigs.find("listen") != tConfigs.end())
+                    key._port = tConfigs.find("listen")->second[0]; // server_name이랑 port 갖고와서 _defaultconfig insert할 때 key로 넣어줘야함
+                else {
+                    std::cerr << "not find listen value\n";
+                    delete sc;
+                    continue;
+                }
+                this->_defaultConfigs.insert(std::pair<ServerConfigKey, VirtualServerConfig *>(key, sc)); // map
             } else
                 std::cerr << "not match (token != server)\n"; // (TODO) 오류터졌을 때 동적할당 해제 해줘야함
             ss.clear();
@@ -74,10 +87,43 @@ void FTServer::init() {
 }
 
 //  TODO Implement real behavior.
-//  Initialize all servers from server config set.
+//  Initialize all virtual servers from virtual server config set.
 void FTServer::initializeVirtualServers() {
-    VirtualServer* newVirtualServer = new VirtualServer(2000, "localhost");
-    this->_vVirtualServers.push_back(newVirtualServer);
+    //  VirtualServer* newVirtualServer = new VirtualServer("127.0.0.1", 2000, "localhost");
+    // NOTE only normal configs
+    for (VirtualServerConfigIter itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++) {
+        VirtualServer* newVirtualServer = this->makeVirtualServer(itr->second);
+        this->_vVirtualServers.push_back(newVirtualServer);
+    }
+}
+
+//  TODO Implement real one virtual server using config
+VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServerConf) {
+    VirtualServer* newVirtualServer;
+    directiveContainer config = virtualServerConf->getConfigs();           // original config in server Block
+    std::set<LocationConfig *> locs = virtualServerConf->getLocations();   // config per location block
+
+    // server block
+    // for (directiveContainer::iterator itr = config.begin(); itr != config.end(); itr++) {
+    //     std::cout << itr->first << " : ";
+    //     for (size_t i = 0; i < itr->second.size(); i++)
+    //         std::cout << itr->second[i] << " ";
+    //     std::cout << std::endl;
+    // }
+    // location block
+    // for (std::set<LocationConfig *>::iterator itr = locs.begin(); itr != locs.end(); itr++) {
+    //     std::cout << "path : " << (*itr)->getPath() << std::endl;
+    //     directiveContainer tmp = (*itr)->getDirectives();
+    //     for (directiveContainer::iterator itr2 = tmp.begin(); itr2 != tmp.end(); itr2++) {
+    //         std::cout << itr2->first << " : ";
+    //         for (size_t i = 0; i < itr2->second.size(); i++)
+    //             std::cout << itr2->second[i] << " ";
+    //         std::cout << std::endl;
+    //     }
+    // }
+    newVirtualServer = new VirtualServer(static_cast<port_t>(std::atoi(config["listen"].front().c_str())),
+                            config["server_name"].front());
+    return newVirtualServer;
 }
 
 void FTServer::initializeConnection(int ports[], int size) {
