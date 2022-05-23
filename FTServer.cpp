@@ -53,13 +53,15 @@ void FTServer::initParseConfig(std::string filePath) {
                 sc = new VirtualServerConfig();
                 if (!sc->parsing(fs, ss, confLine)) // fstream, stringstream를 전달해주는 방식으로 진행
                     std::cerr << "not parsing config\n"; // 각 요소별 동적할당 해제시켜주는게 중요
-                ServerConfigKey *key = new ServerConfigKey;
+                ServerConfigKey key;
                 directiveContainer tConfigs = sc->getConfigs();
                 if (tConfigs.find("server_name") != tConfigs.end())
-                    key->_server_name = tConfigs.find("server_name")->second;
+                    key._server_name.push_back(tConfigs.find("server_name")->second[0]); // 가장 먼저 입력된 server_name 1개만
+                else
+                    key._server_name.push_back("localhost"); // server_name 비어있는 경우 localhost로 설정(안건)
                 if (tConfigs.find("listen") != tConfigs.end())
-                    key->_port = tConfigs.find("listen")->second[0]; // server_name이랑 port 갖고와서 _defaultconfig insert할 때 key로 넣어줘야함
-                this->_defaultConfigs.insert(std::pair<ServerConfigKey*, VirtualServerConfig *>(key, sc)); // map
+                    key._port = tConfigs.find("listen")->second[0]; // server_name이랑 port 갖고와서 _defaultconfig insert할 때 key로 넣어줘야함
+                this->_defaultConfigs.insert(std::pair<ServerConfigKey, VirtualServerConfig *>(key, sc)); // map
             } else
                 std::cerr << "not match (token != server)\n"; // (TODO) 오류터졌을 때 동적할당 해제 해줘야함
             ss.clear();

@@ -52,22 +52,20 @@ public:
 private:
     struct compServer
     {
-        bool operator()(ServerConfigKey* lhs, ServerConfigKey* rhs) const
+        bool operator()(const ServerConfigKey& lhs, const ServerConfigKey& rhs) const
         {
-            return ((lhs->_port < rhs->_port) || (lhs->_server_name < rhs->_server_name));
+            return ((lhs._port < rhs._port) || (lhs._server_name < rhs._server_name));
         }
     };
     typedef std::vector<VirtualServer*>             VirtualServerVec;
     typedef std::map<int, Connection*>           ConnectionMap;
     typedef std::map<int, Connection*>::iterator ConnectionMapIter;
-    // typedef std::set<VirtualServerConfig *, compServer >   ServerConfigSet;
-    typedef std::map<ServerConfigKey *, VirtualServerConfig *, compServer >   ServerConfigMap;
-    // typedef std::set<VirtualServerConfig *>::iterator ServerConfigIter;
-    typedef std::map<ServerConfigKey *, VirtualServerConfig *, compServer >::iterator  ServerConfigIter;
+    typedef std::map<ServerConfigKey, VirtualServerConfig *, compServer >  VirtualServerConfigMap;
+    typedef std::map<ServerConfigKey, VirtualServerConfig *, compServer >::iterator  VirtualServerConfigIter;
 
-    ServerConfigMap _defaultConfigs;
-    VirtualServerVec       _vServers;
-    SocketMap       _mSocket;
+    VirtualServerConfigMap _defaultConfigs;
+    VirtualServerVec       _vVirtualServers;
+    ConnectionMap       _mConnection;
     int             _kqueue;
     bool            _alive;
 
