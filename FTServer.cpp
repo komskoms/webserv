@@ -58,9 +58,14 @@ void FTServer::initParseConfig(std::string filePath) {
                 if (tConfigs.find("server_name") != tConfigs.end())
                     key._server_name.push_back(tConfigs.find("server_name")->second[0]); // 가장 먼저 입력된 server_name 1개만
                 else
-                    key._server_name.push_back("localhost"); // server_name 비어있는 경우 localhost로 설정(안건)
+                    key._server_name.push_back(""); // server_name 비어있는 경우 "" 설정(안건)
                 if (tConfigs.find("listen") != tConfigs.end())
                     key._port = tConfigs.find("listen")->second[0]; // server_name이랑 port 갖고와서 _defaultconfig insert할 때 key로 넣어줘야함
+                else {
+                    std::cerr << "not find listen value\n";
+                    delete sc;
+                    continue;
+                }
                 this->_defaultConfigs.insert(std::pair<ServerConfigKey, VirtualServerConfig *>(key, sc)); // map
             } else
                 std::cerr << "not match (token != server)\n"; // (TODO) 오류터졌을 때 동적할당 해제 해줘야함
@@ -99,32 +104,25 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
     std::set<LocationConfig *> locs = virtualServerConf->getLocations();   // config per location block
 
     // server block
-    for (directiveContainer::iterator itr = config.begin(); itr != config.end(); itr++) {
-        std::cout << itr->first << " : ";
-        for (size_t i = 0; i < itr->second.size(); i++)
-            std::cout << itr->second[i] << " ";
-        std::cout << std::endl;
-    }
+    // for (directiveContainer::iterator itr = config.begin(); itr != config.end(); itr++) {
+    //     std::cout << itr->first << " : ";
+    //     for (size_t i = 0; i < itr->second.size(); i++)
+    //         std::cout << itr->second[i] << " ";
+    //     std::cout << std::endl;
+    // }
     // location block
-    for (std::set<LocationConfig *>::iterator itr = locs.begin(); itr != locs.end(); itr++) {
-        std::cout << "path : " << (*itr)->getPath() << std::endl;
-        directiveContainer tmp = (*itr)->getDirectives();
-        for (directiveContainer::iterator itr2 = tmp.begin(); itr2 != tmp.end(); itr2++) {
-            std::cout << itr2->first << " : ";
-            for (size_t i = 0; i < itr2->second.size(); i++)
-                std::cout << itr2->second[i] << " ";
-            std::cout << std::endl;
-        }
-    }
-    newVirtualServer = new VirtualServer(static_cast<in_port_t>(std::atoi(config["listen"].front().c_str())),
+    // for (std::set<LocationConfig *>::iterator itr = locs.begin(); itr != locs.end(); itr++) {
+    //     std::cout << "path : " << (*itr)->getPath() << std::endl;
+    //     directiveContainer tmp = (*itr)->getDirectives();
+    //     for (directiveContainer::iterator itr2 = tmp.begin(); itr2 != tmp.end(); itr2++) {
+    //         std::cout << itr2->first << " : ";
+    //         for (size_t i = 0; i < itr2->second.size(); i++)
+    //             std::cout << itr2->second[i] << " ";
+    //         std::cout << std::endl;
+    //     }
+    // }
+    newVirtualServer = new VirtualServer(static_cast<port_t>(std::atoi(config["listen"].front().c_str())),
                             config["server_name"].front());
-    // NODE how to runnig -> listen 127.0.0.1:80
-    // just port
-    // newVirtualServer->setPortNumber(static_cast<in_port_t>(std::atoi(config["listen"].front().c_str())));
-    
-    // Note single server_name
-    // newVirtualServer->setVirtualServerName(config["server_name"].front());
-    // newVirtualServer->setAddrStruct("127.0.0.1");
     return newVirtualServer;
 }
 
