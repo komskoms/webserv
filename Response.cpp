@@ -3,7 +3,8 @@
 
 //  Constructor of Response.
 Response::Response()
-: _sendBegin(NULL) { }
+: _sendBegin(NULL)
+, _message("") { }
 
 //  Append message to response message.
 //  - Parameters

@@ -70,7 +70,8 @@ private:
     bool            _alive;
 
     VirtualServer* makeVirtualServer(VirtualServerConfig* serverConf);
-    void clientAccept(Connection* connection);
+    void acceptConnection(Connection* connection);
+    void closeConnection(int ident);
     void read(Connection* connection);
     void write(Connection* connection);
     VirtualServer* selectVirtualServer(/* Request Object */);

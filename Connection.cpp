@@ -1,26 +1,50 @@
-#include <cassert>
 #include "Connection.hpp"
 
+// Constructor of Connection class ( no default constructor )
+// Generates a Connection instance for servers.
+//  - Parameters
+//      - port: Port number to open
 Connection::Connection(int port)
 : _client(false)
-, _port(port) {
-    newSocket();
-    bindSocket();
-    listenSocket();
+, _port(port)
+, _readEventTriggered(-1)
+, _writeEventTriggered(-1) {
+    this->newSocket();
+    this->bindSocket();
+    this->listenSocket();
 }
 
+// Constructor of Connection class
+// Generates a Connection instance for clients.
+//  - Parameters
+//      - ident: Socket FD which is delivered by accept
+//      - addr: Address to the client
+//      - port: Port number to open
 Connection::Connection(int ident, std::string addr, int port)
 : _client(true)
 , _ident(ident)
 , _addr(addr)
-, _port(port) {
+, _port(port)
+, _readEventTriggered(-1)
+, _writeEventTriggered(-1)
+, _closed(false) {
 }
 
+// Destructor of the Socket class
+// Closes opened socket file descriptor.
+Connection::~Connection() {
+    Log::verbose("Connection instance destructor has been called: [%d]", _ident);
+    close(this->_ident);
+}
+
+// Used with accept(), creates a new Connection instance by the information of accepted client.
+//  - Return
+//      new Connection instance
 Connection* Connection::acceptClient() {
     sockaddr_in     remoteaddr;
     socklen_t       remoteaddrSize = sizeof(remoteaddr);
     struct kevent   ev;
-    int clientfd = accept(_ident, reinterpret_cast<sockaddr*>(&remoteaddr), &remoteaddrSize);
+    int clientfd = accept(this->_ident, reinterpret_cast<sockaddr*>(&remoteaddr), &remoteaddrSize);
     std::string     addr;
 
     if (clientfd < 0) {
@@ -28,15 +52,28 @@ Connection* Connection::acceptClient() {
         return NULL;
     }
     addr = inet_ntoa(remoteaddr.sin_addr);
-    Log::Verbose("Connected from [%s:%d]", addr.c_str(), remoteaddr.sin_port);
+    Log::verbose("Connected from [%s:%d]", addr.c_str(), remoteaddr.sin_port);
     if (fcntl(clientfd, F_SETFL, O_NONBLOCK) < 0)
         throw std::runtime_error("fcntl Failed");
     return new Connection(clientfd, addr, remoteaddr.sin_port);
 }
 
+// The way how Connection class handles receive event.
+//  - Return
+//      Result of receiving process.
 ReturnCaseOfRecv Connection::receive() {
     return this->_request.receive(this->_ident);
 }
+
+// // The way how Connection class handles transmit event.
+// //  - Return(none)
+// void Connection::transmit() {
+//     int sendResult = 0;
+
+//     sendResult = send(this->_ident, _response.c_str(), _response.length(), 0);
+//     _response = _response.substr(sendResult, -1);
+//     if (sendResult == 0 || _response.length() == 0) {
+//         this->removeKevent(_writeEventTriggered, EVFILT_WRITE, 0);
 
 //  Send response message to client.
 //  - Parameters(None)
@@ -44,13 +81,12 @@ ReturnCaseOfRecv Connection::receive() {
 void    Connection::transmit() {
     const int returnValue = this->_response.sendResponseMessage(this->_ident);
     switch (returnValue) {
-        case RCSEND_ERROR:
-            // TODO Implement behavior.
-            break;
         case RCSEND_SOME:
             break;
-        case RCSEND_ALL:
+        case RCSEND_ERROR:
             // TODO Implement behavior.
+        case RCSEND_ALL:
+            this->removeKevent(this->_writeEventTriggered, EVFILT_WRITE, 0);
             break;
         default:
             assert(false);
@@ -58,14 +94,77 @@ void    Connection::transmit() {
     }
 }
 
+// Add new event on Kqueue
+//  - Parameters
+//      kqueue: FD number of Kqueue
+//      filter: filter value for Kevent
+//      udata: user data (optional)
+//  - Return(none)
 void Connection::addKevent(int kqueue, int filter, void* udata) {
     struct kevent   ev;
 
-    EV_SET(&ev, _ident, filter, EV_ADD | EV_ENABLE, 0, 0, udata);
-    if (kevent(kqueue, &ev, 1, 0, 0, 0) < 0)
-        throw std::runtime_error("kevent Failed.");
+    EV_SET(&ev, this->_ident, filter, EV_ADD | EV_ENABLE, 0, 0, udata);
+    if (kevent(this->kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("kevent adding Failed.");
+    if (filter == EVFILT_READ) {
+        this->_readEventTriggered = this->kqueue;
+    } else if (filter == EVFILT_WRITE) {
+        this->_writeEventTriggered = this->kqueue;
+    }
 }
 
+// Add new Oneshot event on Kqueue (triggered just for 1 time)
+//  - Parameters
+//      kqueue: FD number of Kqueue
+//      udata: user data (optional)
+//  - Return(none)
+void Connection::addKeventOneshot(int kqueue, void* udata) {
+    struct kevent   ev;
+
+    Log::verbose("Adding oneshot kevent...");
+    EV_SET(&ev, this->_ident, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, udata);
+    if (kevent(this->kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("kevent (Oneshot) adding Failed.");
+}
+
+// Remove existing event on Kqueue
+//  - Parameters
+//      kqueue: FD number of Kqueue
+//      filter: filter value for Kevent to remove
+//      udata: user data (optional)
+//  - Return(none)
+void Connection::removeKevent(int kqueue, int filter, void* udata) {
+    struct kevent   ev;
+
+    EV_SET(&ev, this->_ident, filter, EV_DELETE, 0, 0, udata);
+    if (kevent(this->kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("kevent deletion Failed.");
+    if (filter == EVFILT_READ) {
+        this->_readEventTriggered = -1;
+    } else if (filter == EVFILT_WRITE) {
+        this->_writeEventTriggered = -1;
+    }
+}
+
+// Clean-up process to destroy the Socket instance.
+// mark close attribute, and remove all kevents enrolled.
+//  - Return(none)
+void Connection::dispose() {
+    int kqueue = this->_readEventTriggered;
+
+    if (_closed == true)
+        return;
+    _closed = true;
+    Log::verbose("Socket instance closing. [%d]", this->_ident);
+    if (this->_readEventTriggered >= 0) {
+        Log::verbose("Read Kevent removing.");
+        this->removeKevent(this->_readEventTriggered, EVFILT_READ, 0);
+    }
+    this->addKeventOneshot(kqueue, 0);
+}
+
+// Creates new Connection and set for the attribute.
+//  - Return(none)
 void Connection::newSocket() {
     int     newConnection = socket(PF_INET, SOCK_STREAM, 0);
     int     enable = 1;
@@ -73,46 +172,42 @@ void Connection::newSocket() {
     if (0 > newConnection) {
         throw;
     }
-    Log::Verbose("New Server Connection ( %d )", newConnection);
+    Log::verbose("New Server Connection ( %d )", newConnection);
     if (0 > setsockopt(newConnection, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) {
         throw;
     }
-    Log::Verbose("Connection ( %d ) has been setted to Reusable.", newConnection);
-    _ident = newConnection;
+    Log::verbose("Connection ( %d ) has been setted to Reusable.", newConnection);
+    this->_ident = newConnection;
 }
 
+// Set-up addr_in structure to bind the socket.
+//  - Return(none)
 static void setAddrStruct(int port, sockaddr_in& addr_in) {
     std::memset(&addr_in, 0, sizeof(addr_in));
     addr_in.sin_family = PF_INET;
     addr_in.sin_port = htons(port);
     // addr_in.sin_addr.s_addr = INADDR_ANY;
-    Log::Verbose("Connectionadd struct has been setted");
+    Log::verbose("Connectionadd struct has been setted");
 }
 
+// Bind socket to the designated port.
+//  - Return(none)
 void Connection::bindSocket() {
     sockaddr*   addr;
     sockaddr_in addr_in;
-    setAddrStruct(_port, addr_in);
+    setAddrStruct(this->_port, addr_in);
     addr = reinterpret_cast<sockaddr*>(&addr_in);
-    if (0 > bind(_ident, addr, sizeof(*addr))) {
+    if (0 > bind(this->_ident, addr, sizeof(*addr))) {
         throw;
     }
-    Log::Verbose("Connection ( %d ) bind succeed.", socket);
+    Log::verbose("Connection ( %d ) bind succeed.", socket);
 }
 
+// Listen to the socket for incoming messages.
+//  - Return(none)
 void Connection::listenSocket() {
     if (0 > listen(_ident, 10)) {
         throw;
     }
-    Log::Verbose("Listening from Connection ( %d ), Port ( %d ).", _ident);
-}
-
-//  Set socket's response message.
-//  If you want to append response message in Server object rather than in
-//  Socket object, make a method named
-//  Socket::appendResponseMessage(const char* message) which is calling
-//  this->_response.appendMessage(message).
-void Connection::setResponse() {
-    //  TODO Implement real behavior.
-    this->_response.appendMessage("HTTP/1.1 418 Custom Response\nServer: webserv\nDate: What time is it now?\nContent-Type: text/html\nContent-Length: 176\nConnection: close\n\n<html>\n<head><title>418 Custom Response</title></head>\n<body bgcolor=\"white\">\n<center><h1>418 Custom Response</h1></center>\n<hr><center>webserv</center>\n</body>\n</html>");
+    Log::verbose("Listening from Connection ( %d ), Port ( %d ).", _ident);
 }

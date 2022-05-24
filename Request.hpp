@@ -59,6 +59,7 @@ public:
     HTTP::RequestMethod getMethod() const { return this->_method; };
     char getMajorVersion() const { return this->_majorVersion; };
     char getMinorVersion() const { return this->_minorVersion; };
+    std::string getMessage() const { return this->_message; };
     const std::string* getFirstHeaderFieldValueByName(const std::string& name) const;
 
     ReturnCaseOfRecv receive(int clientSocketFD);
