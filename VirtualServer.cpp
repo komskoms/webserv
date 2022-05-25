@@ -41,7 +41,8 @@ VirtualServer::VirtualServer(short portNumber, const std::string& name)
 //  - Parameters
 //      clientConnection: The connection of client requesting process.
 //      kqueueFD: The kqueue fd is where to add write event for response.
-void VirtualServer::processRequest(Connection& clientConnection) {
+//  - Return: See the type definition.
+VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnection) {
     const Request& request = clientConnection.getRequest();
 
     this->setStatusCode(Status::_array[Status::SI_DEFAULT]._statusCode);
@@ -64,6 +65,8 @@ void VirtualServer::processRequest(Connection& clientConnection) {
     }
 
     this->setResponseMessageByStatusCode(clientConnection);
+
+    return VirtualServer::RC_SUCCESS;
 }
 
 //  Process GET request.
