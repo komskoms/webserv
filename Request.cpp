@@ -53,7 +53,6 @@ ssize_t Request::receiveMessage(int clientSocketFD) {
     if (result <= 0)
         return result;
     buf[result] = '\0';
-
     this->appendMessage(buf);
 
     return result;

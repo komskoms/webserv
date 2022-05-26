@@ -26,7 +26,7 @@ VirtualServer::VirtualServer()
 _name(""),
 _connection(nullptr)
 {
-}; 
+} 
 
 //  Constructor of VirtualServer.
 //  - Parameters
@@ -139,6 +139,7 @@ int VirtualServer::setOKGETResponse(Connection& clientConnection) {
     clientConnection.appendResponseMessage("\r\n");
 
     // TODO append header section
+    clientConnection.appendResponseMessage(clientConnection.makeHeaderField(HTTP::DATE));
 
     std::ifstream targetRepresentation(this->_targetRepresentationURI, std::ios_base::binary | std::ios_base::ate);
     if (!targetRepresentation.is_open()) {
