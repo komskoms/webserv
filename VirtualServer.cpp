@@ -136,9 +136,9 @@ int VirtualServer::processGET(Connection& clientConnection) {
         }
 
         if (location.getAutoIndex()
-                && stat(targetResourceURI.c_str(), &buf) == 0
+                && stat(targetRepresentationURI.c_str(), &buf) == 0
                 && (buf.st_mode & S_IFDIR) != 0)
-            return this->setListResponse(clientConnection, targetResourceURI.c_str());
+            return this->setListResponse(clientConnection, targetRepresentationURI.c_str());
 
         break;
     }
