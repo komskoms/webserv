@@ -295,7 +295,7 @@ int VirtualServer::setListResponse(Connection& clientConnection, const std::stri
     if (dir == NULL)
         return -1;
 
-    int contentLength = 108;
+    int contentLength = 100;
     while (true) {
         const struct dirent* entry = readdir(dir);
         if (entry == NULL)
