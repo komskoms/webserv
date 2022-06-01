@@ -69,7 +69,7 @@ void Request::appendMessage(const char* message) {
 //  - Parameters(None)
 //  - Return: Whether request received the end of header section or not.
 bool Request::isReadyToProcess() const {
-    return (this->_message.find("\x0d\x0a\x0d\x0a") != std::string::npos);
+    return (this->_message.find("\r\n\r\n") != std::string::npos);
 }
 
 //  Parse HTTP request message.
@@ -79,7 +79,7 @@ ParsingResult Request::parseMessage() {
     std::istringstream iss(this->_message);
     std::string line;
 
-    if (!std::getline(iss, line, '\x0d'))
+    if (!std::getline(iss, line, '\r'))
         return PR_FAIL;
     if (this->parseRequestLine(line) == PR_FAIL)
         return PR_FAIL;
@@ -87,7 +87,7 @@ ParsingResult Request::parseMessage() {
     while (true) {
         if (iss.get() == EOF || !iss)
             return PR_FAIL;
-        if (!std::getline(iss, line, '\x0d'))
+        if (!std::getline(iss, line, '\r'))
             return PR_FAIL;
         if (line.empty())
             break;
