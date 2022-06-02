@@ -48,9 +48,21 @@ VirtualServer::VirtualServer(port_t portNumber, const std::string& name)
 //      kqueueFD: The kqueue fd is where to add write event for response.
 //  - Return: See the type definition.
 VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnection) {
-    int returnCode = 0;
+    const Request& request = clientConnection.getRequest();
 
-    switch(clientConnection.getRequest().getMethod()) {
+    if (request.isParsingFail()) {
+        if (this->set400Response(clientConnection) == -1)
+            this->set500Response(clientConnection);
+        return VirtualServer::RC_SUCCESS;
+    }
+    else if (request.isLengthRequired()) {
+        if (this->set411Response(clientConnection) == -1)
+            this->set500Response(clientConnection);
+        return VirtualServer::RC_SUCCESS;
+    }
+
+    int returnCode = 0;
+    switch(request.getMethod()) {
         case HTTP::RM_GET:
             returnCode = processGET(clientConnection);
             break;
@@ -61,6 +73,7 @@ VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnec
             returnCode = processDELETE(clientConnection);
             break;
         default:
+            returnCode = set405Response(clientConnection, NULL);
             break;
     }
 
@@ -209,9 +222,12 @@ int VirtualServer::processPOST(Connection& clientConnection) {
 
     const Location* locationPointer = this->getMatchingLocation(request);
     if (locationPointer == NULL)
-        return this->set404Response(clientConnection);
+        return this->set400Response(clientConnection);
 
     const Location& location = *locationPointer;
+
+    if (request.getBody().length() > location.getClientMaxBodySize())
+        return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
     if (!location.isRequestMethodAllowed(request.getMethod()))
@@ -287,6 +303,22 @@ void VirtualServer::setStatusLine(Connection& clientConnection, Status::Index in
     clientConnection.appendResponseMessage("\r\n");
 }
 
+//  set response message with 400 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return: upon successful completion a value of 0 is returned.
+//      otherwise, a value of -1 is returned.
+int VirtualServer::set400Response(Connection& clientConnection) {
+    clientConnection.clearResponseMessage();
+    this->setStatusLine(clientConnection, Status::I_400);
+
+    // TODO implement
+    clientConnection.appendResponseMessage("Date: ");
+    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage("\r\n\r\n");
+
+    return 0;
+}
+
 //  set response message with 404 status.
 //  - Parameters clientConnection: The client connection.
 //  - Return(None)
@@ -314,16 +346,51 @@ int VirtualServer::set405Response(Connection& clientConnection, const Location* 
     clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
     clientConnection.appendResponseMessage("\r\n");
 
-    clientConnection.appendResponseMessage("Allow: ");
-    std::string tAllowMethod = "";
-    if (location->isRequestMethodAllowed(HTTP::RM_GET))
-        tAllowMethod += "GET, ";
-    if (location->isRequestMethodAllowed(HTTP::RM_POST))
-        tAllowMethod += "POST, ";
-    if (location->isRequestMethodAllowed(HTTP::RM_DELETE))
-        tAllowMethod += "DELETE, ";
-    tAllowMethod = tAllowMethod.substr(0, tAllowMethod.find_last_of(","));
-    clientConnection.appendResponseMessage(tAllowMethod);
+    if (location != NULL) {
+        clientConnection.appendResponseMessage("Allow: ");
+        std::string tAllowMethod = "";
+        if (location->isRequestMethodAllowed(HTTP::RM_GET))
+            tAllowMethod += "GET, ";
+        if (location->isRequestMethodAllowed(HTTP::RM_POST))
+            tAllowMethod += "POST, ";
+        if (location->isRequestMethodAllowed(HTTP::RM_DELETE))
+            tAllowMethod += "DELETE, ";
+        tAllowMethod = tAllowMethod.substr(0, tAllowMethod.find_last_of(","));
+        clientConnection.appendResponseMessage(tAllowMethod);
+        clientConnection.appendResponseMessage("\r\n");
+    }
+    clientConnection.appendResponseMessage("\r\n");
+
+    return 0;
+}
+
+//  set response message with 411 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return: upon successful completion a value of 0 is returned.
+//      otherwise, a value of -1 is returned.
+int VirtualServer::set411Response(Connection& clientConnection) {
+    clientConnection.clearResponseMessage();
+    this->setStatusLine(clientConnection, Status::I_411);
+
+    // TODO implement
+    clientConnection.appendResponseMessage("Date: ");
+    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage("\r\n\r\n");
+
+    return 0;
+}
+
+//  set response message with 413 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return: upon successful completion a value of 0 is returned.
+//      otherwise, a value of -1 is returned.
+int VirtualServer::set413Response(Connection& clientConnection) {
+    clientConnection.clearResponseMessage();
+    this->setStatusLine(clientConnection, Status::I_413);
+
+    // TODO implement
+    clientConnection.appendResponseMessage("Date: ");
+    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
