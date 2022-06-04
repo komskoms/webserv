@@ -25,6 +25,13 @@ const std::string* Request::getFirstHeaderFieldValueByName(const std::string& na
     return (NULL);
 }
 
+//  clear message.
+//  - Parameter(None)
+//  - Return(None)
+void Request::clearMessage() {
+    this->_message.clear();
+}
+
 //  Receive message from client. If the message is ready to process, parse it.
 //  - Parameters clientSocketFD: The fd to recv().
 //  - Return: See the type definition.
@@ -75,7 +82,7 @@ bool Request::isChunked() const {
 ssize_t Request::receiveMessage(int clientSocketFD) {
     char buf[BUF_SIZE];
 
-    ssize_t result = recv(clientSocketFD, buf, BUF_SIZE, 0);
+    ssize_t result = recv(clientSocketFD, buf, BUF_SIZE - 1, 0);
     if (result <= 0)
         return result;
     buf[result] = '\0';

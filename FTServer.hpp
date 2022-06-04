@@ -16,6 +16,7 @@
 #include "VirtualServer.hpp"
 #include "Connection.hpp"
 #include "VirtualServerConfig.hpp"
+#include "EventHandler.hpp"
 
 // NOTE port, server_name only one
 // vector<string>? for multiple server name
@@ -50,6 +51,7 @@ public:
     void initializeConnection(std::set<port_t>&  ports, int size);
 
     VirtualServer& getTargetVirtualServer(Connection& connection);
+    void acceptConnection(int ident);
     void run();
 
 private:
@@ -63,15 +65,16 @@ private:
     VirtualServerVec       _vVirtualServers;
     ConnectionMap       _mConnection;
     std::map<port_t, VirtualServer*> _defaultVirtualServers;
-    int             _kqueue;
     bool            _alive;
+    EventHandler _eventHandler;
 
     VirtualServer* makeVirtualServer(VirtualServerConfig* serverConf);
     void acceptConnection(Connection* connection);
-    void closeConnection(int ident);
-    void read(Connection* connection);
-    void write(Connection* connection);
-    VirtualServer* selectVirtualServer(/* Request Object */);
+    void handleUserFlaggedEvent(struct kevent event);
+
+    EventContext::EventResult driveThisEvent(EventContext* context, int filter);
+    void runEachEvent(struct kevent event);
+    void callVirtualServerMethod(EventContext* context);
 };
 
 #endif  // FTSERVER_HPP_

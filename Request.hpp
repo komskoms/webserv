@@ -69,6 +69,7 @@ public:
     const std::string* getFirstHeaderFieldValueByName(const std::string& name) const;
     const std::string& getBody() const { return this->_body; };
 
+    void clearMessage();
     bool isParsingFail() const { return this->_parsingStatus == S_PARSING_FAIL; };
     bool isLengthRequired() const { return this->_parsingStatus == S_LENGTH_REQUIRED; };
 
