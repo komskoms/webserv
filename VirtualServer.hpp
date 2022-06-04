@@ -92,10 +92,10 @@ public:
     void appendLocation(Location* lc) { this->_location.push_back(lc); };
     VirtualServer::ReturnCode processRequest(Connection& clientConnection);
 
-    std::string makeHeaderField(unsigned short fieldName);
     std::string makeDateHeaderField();
     // std::string makeAllowHeaderField();
-    std::string makeContentLocationHeaderField();
+    // std::string makeContentLocationHeaderField();
+    std::string makeLocationHeaderField(const std::map<std::string, std::vector<std::string> >& locOther);
 
 private:
     port_t _portNumber;
@@ -114,7 +114,7 @@ private:
     void setStatusLine(Connection& clientConnection, HTTP::Status::Index index);
 
     int set400Response(Connection& clientConnection);
-    int set301Response(Connection& clientConnection);
+    int set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther);
     int set404Response(Connection& clientConnection);
     int set405Response(Connection& clientConnection, const Location* locations);
     int set411Response(Connection& clientConnection);

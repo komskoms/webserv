@@ -109,13 +109,14 @@ int VirtualServer::processGET(Connection& clientConnection) {
     std::string targetRepresentationURI;
 
     if (this->_others.find("return") != this->_others.end())
-        return this->set301Response(clientConnection);
-
+        return this->set301Response(clientConnection, this->_others);
     const Location* locationPointer = this->getMatchingLocation(request);
     if (locationPointer == NULL)
         return this->set404Response(clientConnection);
     const Location& location = *locationPointer;
-
+    const std::map<std::string, std::vector<std::string> > &locOthers = location.getOtherDirective();
+    if (locOthers.find("return") != locOthers.end())
+        return this->set301Response(clientConnection, locOthers);
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
@@ -125,7 +126,7 @@ int VirtualServer::processGET(Connection& clientConnection) {
 
         clientConnection.appendResponseMessage("Server: crash-webserve\r\n");
         clientConnection.appendResponseMessage("Date: ");
-        clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+        clientConnection.appendResponseMessage(this->makeDateHeaderField());
         clientConnection.appendResponseMessage("\r\n");
         clientConnection.appendResponseMessage("Content-Type: ");
         std::string type;
@@ -168,7 +169,7 @@ int VirtualServer::processGET(Connection& clientConnection) {
 
         clientConnection.appendResponseMessage("Server: crash-webserve\r\n");
         clientConnection.appendResponseMessage("Date: ");
-        clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+        clientConnection.appendResponseMessage(this->makeDateHeaderField());
         clientConnection.appendResponseMessage("\r\n");
         clientConnection.appendResponseMessage("Content-Type: ");
         std::string type;
@@ -246,7 +247,7 @@ int VirtualServer::processPOST(Connection& clientConnection) {
 
     // TODO 적절한 헤더 필드 추가하기(content-length)
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     // TODO 적절한 바디 생성하기
@@ -282,7 +283,7 @@ int VirtualServer::processDELETE(Connection& clientConnection) {
 
         // TODO 적절한 헤더 필드 추가하기(content-length)
         clientConnection.appendResponseMessage("Date: ");
-        clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+        clientConnection.appendResponseMessage(this->makeDateHeaderField());
         clientConnection.appendResponseMessage("\r\n\r\n");
 
         // TODO 적절한 바디 설정하기
@@ -314,14 +315,14 @@ int VirtualServer::set400Response(Connection& clientConnection) {
 
     // TODO implement
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
 }
-int VirtualServer::set301Response(Connection& clientConnection) {
+
+int VirtualServer::set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther) {
     struct stat buf;
-    const std::string REDIRECT_PATH = "/Users/mike2ox/Project/webserve/redirect.html";
     
     clientConnection.clearResponseMessage();
     this->setStatusLine(clientConnection, Status::I_301);
@@ -338,11 +339,11 @@ int VirtualServer::set301Response(Connection& clientConnection) {
     clientConnection.appendResponseMessage(type);
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n");
     // location
     clientConnection.appendResponseMessage("Location: ");
-    clientConnection.appendResponseMessage("http://localhost:8080/");
+    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther));
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("Server: crash-webserve\r\n\r\n");
 
@@ -369,7 +370,7 @@ int VirtualServer::set404Response(Connection& clientConnection) {
 
     // TODO implement
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
@@ -384,7 +385,7 @@ int VirtualServer::set405Response(Connection& clientConnection, const Location* 
 
     // TODO implement
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n");
 
     if (location != NULL) {
@@ -415,7 +416,7 @@ int VirtualServer::set411Response(Connection& clientConnection) {
 
     // TODO implement
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
@@ -431,7 +432,7 @@ int VirtualServer::set413Response(Connection& clientConnection) {
 
     // TODO implement
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
@@ -446,7 +447,7 @@ int VirtualServer::set500Response(Connection& clientConnection) {
 
     // TODO append header section and body
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n\r\n");
 
     return 0;
@@ -485,7 +486,7 @@ int VirtualServer::setListResponse(Connection& clientConnection, const std::stri
     clientConnection.appendResponseMessage("Connection: keep-alive\r\n");
     clientConnection.appendResponseMessage("Content-Type: text/html\r\n");
     clientConnection.appendResponseMessage("Date: ");
-    clientConnection.appendResponseMessage(this->makeHeaderField(HTTP::DATE));
+    clientConnection.appendResponseMessage(this->makeDateHeaderField());
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("Server: crash-webserve\r\n");
     clientConnection.appendResponseMessage("\r\n");
@@ -524,20 +525,6 @@ int VirtualServer::setListResponse(Connection& clientConnection, const std::stri
 
     return 0;
 }
-
-std::string VirtualServer::makeHeaderField(unsigned short fieldName) {
-    switch (fieldName)
-    {
-    case HTTP::DATE:
-        return makeDateHeaderField();
-    // case HTTP::ALLOW:
-    //     return makeAllowHeaderField();
-    case HTTP::CONTENT_LOCATION:
-        return makeContentLocationHeaderField();
-    }
-    return ""; // TODO delete
-}
-
 // Find the current time based on GMT
 //  - Parameters(None)
 //  - Return
@@ -555,17 +542,29 @@ std::string VirtualServer::makeDateHeaderField() {
     
 // }
 
-// Find the exact file that fits the type
+
+// Make Content-Location Field (path of appropriate data)
 //  - Parameters(None)
 //  - Return
-//      Current time based on GMT(std::string)
-std::string VirtualServer::makeContentLocationHeaderField() {
-    // 해당 파일의 경로를 갖고오는 함수
-    // content-type(mime)을 기준으로 찾아주는거 같음
-    // 만약 해당 uri가 파일이다 -> 그대로 출력
-    // 파일인지 모른다 -> accept language랑 accept encoding을 기준으로 해당 경로의 파일들을 다 탐색
-    std::string t;
-    return t;
+// std::string VirtualServer::makeContentLocationHeaderField() {
+//     // 해당 파일의 경로를 갖고오는 함수
+//     // content-type(mime)을 기준으로 찾아주는거 같음
+//     // 만약 해당 uri가 파일이다 -> 그대로 출력
+//     // 파일인지 모른다 -> accept language랑 accept encoding을 기준으로 해당 경로의 파일들을 다 탐색
+//     std::string t;
+//     return t;
+// }
+
+// Make Location Field (redirection path)
+//  - Parameters
+//      locOther : etc directive set of connected locations
+//  - Return
+//      get redirection path. if not find, get null string(TODO)
+std::string VirtualServer::makeLocationHeaderField(const std::map<std::string, std::vector<std::string> >& locOther) {
+    std::map<std::string, std::vector<std::string> >::const_iterator otherIter = locOther.find("return");
+    if (otherIter != locOther.end())
+        return otherIter->second.back();
+    return ""; // TODO not found redirection path
 }
 
 //  set 'type' of 'name'
