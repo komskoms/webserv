@@ -2,8 +2,8 @@
 
 //  Constructor of Response.
 Response::Response()
-: _sendBegin(NULL)
-, _message("") { }
+: _message("")
+, _sendBegin(NULL) { }
 
 //  clear message.
 //  - Parameter(None)
@@ -34,7 +34,7 @@ ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
     if (sendedBytes == -1) {
         return RCSEND_ERROR;
     }
-    else if (sendedBytes != lengthToSend) {
+    else if (static_cast<std::size_t>(sendedBytes) != lengthToSend) {
         this->_sendBegin += sendedBytes;
 
         return RCSEND_SOME;

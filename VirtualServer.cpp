@@ -221,7 +221,7 @@ int VirtualServer::processPOST(Connection& clientConnection) {
 
     const Location& location = *locationPointer;
 
-    if (request.getBody().length() > location.getClientMaxBodySize())
+    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
         return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);

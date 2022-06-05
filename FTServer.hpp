@@ -48,7 +48,7 @@ public:
     void init();
     void initializeVirtualServers();
     void initParseConfig(std::string configfile);
-    void initializeConnection(std::set<port_t>&  ports, int size);
+    void initializeConnection(std::set<port_t>&  ports);
 
     VirtualServer& getTargetVirtualServer(Connection& connection);
     void acceptConnection(int ident);

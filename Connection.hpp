@@ -59,8 +59,8 @@ private:
     Request _request;
     Response _response;
 	EventHandler& _eventHandler;
-    int _readEventTriggered;
-    int _writeEventTriggered;
+//    int _readEventTriggered;
+//    int _writeEventTriggered;
     bool _closed;
 
     Connection(int ident, std::string addr, port_t port, EventHandler& evHandler);

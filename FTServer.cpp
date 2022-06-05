@@ -95,7 +95,7 @@ void FTServer::init() {
         itr != this->_vVirtualServers.end(); itr++) {
         portsOpen.insert((*itr)->getPortNumber());
     }
-    this->initializeConnection(portsOpen, portsOpen.size());
+    this->initializeConnection(portsOpen);
 }
 
 //  TODO Implement real behavior.
@@ -170,7 +170,7 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
 // TODO: make it works with actuall server config!
 //  - Parameter
 //  - Return(none)
-void FTServer::initializeConnection(std::set<port_t>& ports, int size) {
+void FTServer::initializeConnection(std::set<port_t>& ports) {
     for (std::set<port_t>::iterator itr = ports.begin(); itr != ports.end(); itr++) {
         Connection* newConnection = new Connection(*itr, _eventHandler);
         this->_mConnection.insert(std::make_pair(newConnection->getIdent(), newConnection));

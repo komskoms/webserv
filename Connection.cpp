@@ -7,9 +7,7 @@
 Connection::Connection(port_t port, EventHandler& evHandler)
 : _client(false)
 , _hostPort(port)
-, _eventHandler(evHandler)
-, _readEventTriggered(-1)
-, _writeEventTriggered(-1) {
+, _eventHandler(evHandler) {
     this->newSocket();
     this->bindSocket();
     this->listenSocket();
@@ -25,11 +23,9 @@ Connection::Connection(port_t port, EventHandler& evHandler)
 Connection::Connection(int ident, std::string addr, port_t port, EventHandler& evHandler)
 : _client(true)
 , _ident(ident)
-, _addr(addr)
 , _hostPort(port)
+, _addr(addr)
 , _eventHandler(evHandler)
-, _readEventTriggered(-1)
-, _writeEventTriggered(-1)
 , _closed(false) {
     Log::verbose("New Client Connection: socket[%d]", _ident);
 }
@@ -47,7 +43,6 @@ Connection::~Connection() {
 Connection* Connection::acceptClient() {
     sockaddr_in     remoteaddr;
     socklen_t       remoteaddrSize = sizeof(remoteaddr);
-    struct kevent   ev;
     int clientfd = accept(this->_ident, reinterpret_cast<sockaddr*>(&remoteaddr), &remoteaddrSize);
     std::string     addr;
     port_t  port;
