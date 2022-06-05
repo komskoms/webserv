@@ -166,7 +166,7 @@ int VirtualServer::processGET(Connection& clientConnection) {
         clientConnection.appendResponseMessage("\r\n");
         clientConnection.appendResponseMessage("Content-Type: ");
         std::string type;
-        updateContentType(targetRepresentationURI, type);
+        updateContentType(location.getIndex(), type);
         clientConnection.appendResponseMessage(type);
         clientConnection.appendResponseMessage("\r\n");
         clientConnection.appendResponseMessage("Content-Length: ");
