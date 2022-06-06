@@ -8,8 +8,7 @@ Connection::Connection(port_t port, EventHandler& evHandler)
 : _client(false)
 , _hostPort(port)
 , _eventHandler(evHandler)
-, _readEventTriggered(-1)
-, _writeEventTriggered(-1) {
+, _targetVirtualServer(NULL) {
     this->newSocket();
     this->bindSocket();
     this->listenSocket();
@@ -25,12 +24,11 @@ Connection::Connection(port_t port, EventHandler& evHandler)
 Connection::Connection(int ident, std::string addr, port_t port, EventHandler& evHandler)
 : _client(true)
 , _ident(ident)
-, _addr(addr)
 , _hostPort(port)
+, _addr(addr)
 , _eventHandler(evHandler)
-, _readEventTriggered(-1)
-, _writeEventTriggered(-1)
-, _closed(false) {
+, _closed(false)
+, _targetVirtualServer(NULL) {
     Log::verbose("New Client Connection: socket[%d]", _ident);
 }
 
@@ -47,7 +45,6 @@ Connection::~Connection() {
 Connection* Connection::acceptClient() {
     sockaddr_in     remoteaddr;
     socklen_t       remoteaddrSize = sizeof(remoteaddr);
-    struct kevent   ev;
     int clientfd = accept(this->_ident, reinterpret_cast<sockaddr*>(&remoteaddr), &remoteaddrSize);
     std::string     addr;
     port_t  port;
@@ -119,9 +116,28 @@ void Connection::dispose() {
 	);
 }
 
-EventContext::EventResult Connection::handleCGIResponse(int CGIPipeOut) {
+EventContext::EventResult Connection::handleCGIParamBody(int PipeToCGI) {
+	std::string body = this->getRequest().getBody();
+	size_t leftSize = body.length();
+	size_t offset = 0;
+    ssize_t writeResult = write(PipeToCGI, body.c_str() + offset, BUF_SIZE - 1);
+
+    switch (writeResult) {
+    case -1:
+        Log::warning("CGI body pass failed.");
+    case 0:
+		close(PipeToCGI);
+        return EventContext::ER_Remove;
+    default:
+		leftSize -= writeResult;
+		offset += writeResult;
+        return EventContext::ER_Continue;
+    }
+}
+
+EventContext::EventResult Connection::handleCGIResponse(int PipeFromCGI) {
     char buffer[BUF_SIZE];
-    ssize_t result = read(CGIPipeOut, buffer, BUF_SIZE - 1);
+    ssize_t result = read(PipeFromCGI, buffer, BUF_SIZE - 1);
 
     switch (result) {
     case 0:
@@ -142,6 +158,9 @@ EventContext::EventResult Connection::handleCGIResponse(int CGIPipeOut) {
     }
 }
 
+void Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data) {
+    this->_eventHandler.addEvent(filter, fd, type, data);
+}
 
 // Creates new Connection and set for the attribute.
 //  - Return(none)
@@ -150,11 +169,10 @@ void Connection::newSocket() {
     int     enable = 1;
 
     if (0 > newConnection) {
-        throw;
+        throw Connection::MAKESOCKETFAIL();
     }
-    // Log::verbose("New Server Connection ( %d )", newConnection);
     if (0 > setsockopt(newConnection, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int))) {
-        throw;
+        throw Connection::SETUPSOCKETOPTFAIL();
     }
     // Log::verbose("Connection ( %d ) has been setted to Reusable.", newConnection);
     this->_ident = newConnection;
@@ -178,18 +196,18 @@ void Connection::bindSocket() {
     setAddrStruct(this->_hostPort, addr_in);
     addr = reinterpret_cast<sockaddr*>(&addr_in);
     if (0 > bind(this->_ident, addr, sizeof(*addr))) {
-        throw; // TODO
+        throw Connection::BINDSOCKETERROR();
     }
-    // Log::verbose("Connection ( %d ) bind succeed.", this->_ident);
 }
 
 // Listen to the socket for incoming messages.
 //  - Return(none)
 void Connection::listenSocket() {
     if (0 > listen(_ident, 10)) {
-        throw;
+        throw Connection::LISTENSOCKETERROR();
     }
-    // Log::verbose("Listening from Connection ( %d ), Port ( %d ).", this->_ident, this->_hostPort);
+    if (fcntl(this->_ident, F_SETFL, O_NONBLOCK) == -1)
+        throw Connection::LISTENSOCKETERROR();
 }
 
 EventContext::EventResult Connection::passParsedRequest() {

@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <fstream>
 #include <sstream>
 #include <cstring>
 #include <sys/stat.h>
@@ -18,8 +18,11 @@
 #include "constant.hpp"
 
 class Connection;
+class EventHandler;
 
 typedef unsigned short port_t;
+typedef std::map<std::string, std::string> StringMap;
+typedef std::map<std::string, std::string>::iterator StringMapIter;
 
 namespace HTTP {
 
@@ -37,7 +40,6 @@ struct Status {
         I_201,
         I_301,
         I_400,
-        I_403,
         I_404,
         I_405,
         I_411,
@@ -82,6 +84,7 @@ inline const char* getStatusReasonBy(HTTP::Status::Index index) {
 class VirtualServer {
 public:
     enum ReturnCode {
+        RC_ERROR,
         RC_SUCCESS,
         RC_IN_PROGRESS,
     };  // ReturnCode
@@ -98,7 +101,12 @@ public:
         this->_others.insert(make_pair(directiveName, directiveValue)); // TODO multi-value
     };
     void appendLocation(Location* lc) { this->_location.push_back(lc); };
-    VirtualServer::ReturnCode processRequest(Connection& clientConnection);
+    int updateErrorPage(EventHandler& eventHandler, const std::string& statusCode, const std::string& filePath);
+    EventContext::EventResult eventSetVirtualServerErrorPage(EventContext& context);
+    EventContext::EventResult eventGETResponse(EventContext& context, EventHandler& eventHandler);
+    EventContext::EventResult eventPOSTResponse(EventContext& context, EventHandler& eventHandler);
+
+    VirtualServer::ReturnCode processRequest(Connection& clientConnection, EventHandler& eventHandler);
 
     std::string makeDateHeaderField();
     // std::string makeAllowHeaderField();
@@ -113,22 +121,61 @@ private:
 
     std::map<std::string, std::vector<std::string> > _others;
 
+    std::map<std::string, std::string> _errorPage;
+
     const Location* getMatchingLocation(const Request& request);
 
-    int processGET(Connection& clientConnection);
-    int processPOST(Connection& clientConnection);
-    int processDELETE(Connection& clientConnection);
+    ReturnCode processGET(Connection& clientConnection, EventHandler& eventHandler);
+    ReturnCode processPOST(Connection& clientConnection, EventHandler& eventHandler);
+    ReturnCode processDELETE(Connection& clientConnection);
 
-    void setStatusLine(Connection& clientConnection, HTTP::Status::Index index);
+    void appendStatusLine(Connection& clientConnection, HTTP::Status::Index index);
+    void appendDefaultHeaderFields(Connection& clientConnection);
+    void appendContentDefaultHeaderFields(Connection& clientConnection);
+    void updateBodyString(HTTP::Status::Index index, const char* description, std::string& bodystring) const;
 
-    int set400Response(Connection& clientConnection);
-    int set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther);
-    int set404Response(Connection& clientConnection);
-    int set405Response(Connection& clientConnection, const Location* locations);
-    int set411Response(Connection& clientConnection);
-    int set413Response(Connection& clientConnection);
-    int set500Response(Connection& clientConnection);
-    int setListResponse(Connection& clientConnection, const std::string& path);
+    ReturnCode set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther);
+    ReturnCode set400Response(Connection& clientConnection);
+    ReturnCode set404Response(Connection& clientConnection);
+    ReturnCode set405Response(Connection& clientConnection, const Location* locations);
+    ReturnCode set411Response(Connection& clientConnection);
+    ReturnCode set413Response(Connection& clientConnection);
+    ReturnCode set500Response(Connection& clientConnection);
+    ReturnCode setListResponse(Connection& clientConnection, const std::string& path);
+
+    // enum {
+    //     SERVER_SOFTWARE,
+    //     SERVER_NAME,
+    //     GATEWAY_INTERFACE,
+    //     SERVER_PROTOCOL,
+    //     SERVER_PORT,
+    //     REQUEST_METHOD,
+    //     PATH_INFO,
+    //     PATH_TRANSLATED,
+    //     SCRIPT_NAME,
+    //     QUERY_STRING,
+    //     REMOTE_HOST,
+    //     REMOTE_ADDR,
+    //     AUTH_TYPE,
+    //     REMOTE_USER,
+    //     REMOTE_IDENT,
+    //     CONTENT_TYPE,
+    //     CONTENT_LENGTH,
+
+    //     Literal,
+    //     FromHeader,
+    //     FromConfig,
+    // };
+    enum {
+        Error = -1,
+        ChildProcess = 0,
+    };
+
+    StringMap _CGIEnvironmentMap;
+    std::string getHeaderValue(const Request& request, std::string key);
+    void fillCGIEnvMap(Connection& clientConnection, Location location);
+    char** makeCGIEnvironmentArray();
+    ReturnCode passCGI(Connection& clientConnection);
 };  // VirtualServer
 
 #endif  // VIRTUALSERVER_HPP_

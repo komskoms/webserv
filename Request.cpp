@@ -110,6 +110,11 @@ Request::Status Request::parseMessage() {
     if (this->parseRequestLine(line) == PR_FAIL)
         return S_PARSING_FAIL;
 
+    for (HeaderSectionType::iterator itr = this->_headerSection.begin();
+        itr != this->_headerSection.end();
+        itr++) {
+            delete *itr;
+        }
     this->_headerSection.clear();
     while (true) {
         iss.get();
@@ -217,7 +222,7 @@ ParsingResult Request::parseHeader(const std::string& headerField) {
         value.erase(value.length() - 1);
 
     tolower(name);
-    this->_headerSection.push_back(new HeaderSectionElementType(name, value));
+    this->_headerSection.push_back(new HeaderSectionElementType(name, value)); // leaks
 
     return PR_SUCCESS;
 }

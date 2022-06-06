@@ -16,6 +16,8 @@
 
 #define TCP_MTU 1500
 
+class VirtualServer;
+
 typedef unsigned short port_t;
 
 //  General coonection handler, from generation communication.
@@ -28,7 +30,10 @@ typedef unsigned short port_t;
 //      _ident
 //      _addr
 //      _port
-//      _request
+//      _request: store request message and parse it.
+//      -response: store response message and send it to client.
+//
+//      _targetVirtualServer: the target to process request.
 //   - Methods
 class Connection {
 public:
@@ -40,7 +45,10 @@ public:
     std::string getAddr() { return this->_addr; };
     port_t getPort() { return this->_hostPort; };
     const Request& getRequest() const { return this->_request; };
+    const Response& getResponse() const { return this->_response; };
     bool isClosed() { return this->_closed; };
+    VirtualServer* getTargetVirtualServer() { return this->_targetVirtualServer; };
+    void setTargetVirtualServer(VirtualServer* targetVirtualServer) { this->_targetVirtualServer = targetVirtualServer; };
 
     Connection* acceptClient();
     EventContext::EventResult receive();
@@ -49,8 +57,35 @@ public:
     void clearRequestMessage();
     void clearResponseMessage();
     void appendResponseMessage(const std::string& message);
-    EventContext::EventResult handleCGIResponse(int CGIPipeOut);
+    EventContext::EventResult handleCGIParamBody(int PipeToCGI);
+    EventContext::EventResult handleCGIResponse(int PipeFromCGI);
+    void addKevent(int filter, int fd, EventContext::EventType type, void* data);
 
+    class MAKESOCKETFAIL: public std::exception {
+    public:
+        virtual const char* what() const throw() {
+            return "socket() fail error";
+        }
+    };
+    class SETUPSOCKETOPTFAIL: public std::exception {
+    public:
+        virtual const char* what() const throw() {
+            return "setsocketopt() faile error";
+        }
+    };
+    class BINDSOCKETERROR: public std::exception {
+    public:
+        virtual const char* what() const throw() {
+            return "bind() fail error";
+        }
+    };
+    class LISTENSOCKETERROR: public std::exception {
+    public:
+        virtual const char* what() const throw() {
+            return "listen() fail error!!";
+        }
+    };
+    
 private:
     bool _client;
     int _ident;
@@ -59,9 +94,11 @@ private:
     Request _request;
     Response _response;
 	EventHandler& _eventHandler;
-    int _readEventTriggered;
-    int _writeEventTriggered;
+//    int _readEventTriggered;
+//    int _writeEventTriggered;
     bool _closed;
+
+    VirtualServer* _targetVirtualServer;
 
     Connection(int ident, std::string addr, port_t port, EventHandler& evHandler);
 

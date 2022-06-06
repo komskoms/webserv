@@ -14,15 +14,21 @@ _eventHandler(EventHandler()) {
 // Destructor of FTServer
 //  - Parameters(None)
 FTServer::~FTServer() {
-    ConnectionMapIter   connectionIter = _mConnection.begin();
-    for (;connectionIter != _mConnection.end() ; connectionIter++) {
+    for (ConnectionMapIter   connectionIter = _mConnection.begin();
+        connectionIter != _mConnection.end();
+        connectionIter++) {
         delete connectionIter->second;
     }
-
-    for (VirtualServerConfigIter itr = _defaultConfigs.begin(); itr != _defaultConfigs.end(); ++itr) {
+    for (VirtualServerConfigIter itr = _defaultConfigs.begin();
+        itr != _defaultConfigs.end();
+        ++itr) {
         delete (*itr);
     }
-
+    for (VirtualServerVec::iterator itr = _vVirtualServers.begin();
+        itr != _vVirtualServers.end();
+        itr++) {
+        delete *itr;
+    }
     Log::verbose("All Connections has been deleted.");
     // close(_kqueue);
 }
@@ -82,7 +88,6 @@ void FTServer::initParseConfig(std::string filePath) {
         std::cerr << "not open file\n";
 }
 
-//  TODO Implement real behavior.
 //  Initialize server manager from server config set.
 void FTServer::init() {
     if (_eventHandler.getKqueue() < 0)
@@ -95,10 +100,9 @@ void FTServer::init() {
         itr != this->_vVirtualServers.end(); itr++) {
         portsOpen.insert((*itr)->getPortNumber());
     }
-    this->initializeConnection(portsOpen, portsOpen.size());
+    this->initializeConnection(portsOpen);
 }
 
-//  TODO Implement real behavior.
 //  Initialize all virtual servers from virtual server config set.
 void FTServer::initializeVirtualServers() {
     for (VirtualServerConfigIter itr = this->_defaultConfigs.begin(); itr != this->_defaultConfigs.end(); itr++) {
@@ -108,7 +112,7 @@ void FTServer::initializeVirtualServers() {
     }
 }
 
-//  TODO Implement real one virtual server using config
+//  make virtual server from config.
 VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServerConf) {
     VirtualServer* newVirtualServer;
     directiveContainer config = virtualServerConf->getConfigs();           // original config in server Block
@@ -128,6 +132,11 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
             ss >> cmbs;
             newVirtualServer->setClientMaxBodySize(cmbs);
             ss.clear();
+        }
+        if (itr->first.compare("error_page") == 0) {
+            if (itr->second.size() != 2)
+                continue;
+            newVirtualServer->updateErrorPage(this->_eventHandler, itr->second[0], itr->second[1]);
         }
         else {
             for (size_t i = 0; i < itr->second.size(); i++)
@@ -167,10 +176,9 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
 }
 
 // Prepares sockets as descripted by the server configuration.
-// TODO: make it works with actuall server config!
 //  - Parameter
 //  - Return(none)
-void FTServer::initializeConnection(std::set<port_t>& ports, int size) {
+void FTServer::initializeConnection(std::set<port_t>& ports) {
     for (std::set<port_t>::iterator itr = ports.begin(); itr != ports.end(); itr++) {
         Connection* newConnection = new Connection(*itr, _eventHandler);
         this->_mConnection.insert(std::make_pair(newConnection->getIdent(), newConnection));
@@ -206,24 +214,34 @@ void FTServer::acceptConnection(Connection* connection) {
     }
     Log::verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
+
 void FTServer::acceptConnection(int ident) {
     return this->acceptConnection(_mConnection[ident]);
 }
 
 void FTServer::callVirtualServerMethod(EventContext* context) {
-    VirtualServer& matchingServer = getTargetVirtualServer(*_mConnection[context->getIdent()]);
-    Connection* connection = (Connection*)context->getData();
+    Connection* connection = static_cast<Connection*>(context->getData());
+    VirtualServer& matchingServer = getTargetVirtualServer(*connection);
+    connection->setTargetVirtualServer(&matchingServer);
     VirtualServer::ReturnCode result;
 
-    result = matchingServer.processRequest(*connection);
-    if (result != VirtualServer::RC_SUCCESS)
-        return ;
-    _eventHandler.addEvent(
-		EVFILT_WRITE,
-		context->getIdent(),
-        EventContext::EV_Response,
-        connection
-    );
+    result = matchingServer.processRequest(*connection, this->_eventHandler);
+    switch (result) {
+        case VirtualServer::RC_ERROR:
+            break;
+        case VirtualServer::RC_SUCCESS:
+            _eventHandler.addEvent(
+                EVFILT_WRITE,
+                context->getIdent(),
+                EventContext::EV_Response,
+                connection
+            );
+            break;
+        case VirtualServer::RC_IN_PROGRESS:
+            break;
+        default:
+            assert(false);
+    }
 }
 
 // Close the certain socket and destroy the instance.
@@ -253,7 +271,6 @@ void FTServer::handleUserFlaggedEvent(struct kevent event) {
 //      clientConnection: The connection for client.
 //  - Returns: Appropriate server to process client connection.
 VirtualServer& FTServer::getTargetVirtualServer(Connection& clientConnection) {
-    //  TODO Implement real behavior. Change the return type from reference to pointer type.
     int cntVirtualServers = this->_vVirtualServers.size();
     const std::string* tHostName = clientConnection.getRequest().getFirstHeaderFieldValueByName("host");
     if (tHostName != NULL) {
@@ -299,26 +316,27 @@ void FTServer::run() {
 //  - Returns
 //      Result flag of handled event
 EventContext::EventResult FTServer::driveThisEvent(EventContext* context, int filter) {
-	Connection* connection = (Connection*)context->getData();
-
+    Connection* connection = static_cast<Connection*>(context->getData());
+	if (filter != EVFILT_WRITE || filter != EVFILT_READ)
+		return EventContext::ER_NA;
 	switch (context->getCallerType()) {
 	case EventContext::EV_Accept:
-		if (filter != EVFILT_READ)
-			return EventContext::ER_NA;
 		this->acceptConnection(context->getIdent());
 		return EventContext::ER_Continue;
 	case EventContext::EV_Request:
-		if (filter != EVFILT_READ)
-			return EventContext::ER_NA;
 		return connection->receive();
 	case EventContext::EV_Response:
-		if (filter != EVFILT_WRITE)
-			return EventContext::ER_NA;
 		return connection->transmit();
+	case EventContext::EV_CGIParamBody:
+        return connection->handleCGIParamBody(context->getIdent());
 	case EventContext::EV_CGIResponse:
-		if (filter != EVFILT_WRITE)
-            return EventContext::ER_NA;
         return connection->handleCGIResponse(context->getIdent());
+    case EventContext::EV_SetVirtualServerErrorPage:
+        return this->eventSetVirtualServerErrorPage(*context);
+    case EventContext::EV_GETResponse:
+        return this->eventGETResponse(*context);
+    case EventContext::EV_POSTResponse:
+        return this->eventPOSTResponse(*context);
 	default:
 		;
     }
@@ -349,4 +367,34 @@ void FTServer::runEachEvent(struct kevent event) {
 		_eventHandler.removeEvent(filter, context);
 	}
 
+}
+
+//  event function reading a file and setting error page.
+//  - Parameters context: context of event.
+//  - Return: result of event.
+EventContext::EventResult FTServer::eventSetVirtualServerErrorPage(EventContext& context) {
+    std::pair<const std::string&, VirtualServer&>* data = static_cast<std::pair<const std::string&, VirtualServer&>*>(context.getData());
+    VirtualServer& virtualServer = data->second;
+
+    return virtualServer.eventSetVirtualServerErrorPage(context);
+}
+
+//  event function reading a file and responding of GET request.
+//  - Parameters context: context of event.
+//  - Return: result of event.
+EventContext::EventResult FTServer::eventGETResponse(EventContext& context) {
+    Connection* clientConnection = static_cast<Connection*>(context.getData());
+    VirtualServer* targetVirtualServer = clientConnection->getTargetVirtualServer();
+
+    return targetVirtualServer->eventGETResponse(context, this->_eventHandler);
+}
+
+//  event function writing a file and responding of POST request.
+//  - Parameters context: context of event.
+//  - Return: result of event.
+EventContext::EventResult FTServer::eventPOSTResponse(EventContext& context) {
+    Connection* clientConnection = static_cast<Connection*>(context.getData());
+    VirtualServer* targetVirtualServer = clientConnection->getTargetVirtualServer();
+
+    return targetVirtualServer->eventPOSTResponse(context, this->_eventHandler);
 }
