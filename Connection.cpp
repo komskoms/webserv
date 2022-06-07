@@ -182,6 +182,8 @@ void Connection::listenSocket() {
     if (0 > listen(_ident, 10)) {
         throw Connection::LISTENSOCKETERROR();
     }
+    if (fcntl(this->_ident, F_SETFL, O_NONBLOCK) == -1)
+        throw Connection::LISTENSOCKETERROR();
 }
 
 EventContext::EventResult Connection::passParsedRequest() {
