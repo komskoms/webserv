@@ -135,14 +135,15 @@ VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnec
 //  - Return: matching location, if no location match, NULL would be returned.
 const Location* VirtualServer::getMatchingLocation(const Request& request) {
     const std::string& targetResourceURI = request.getTargetResourceURI();
-
+    std::map<std::string, const Location*, std::greater<std::string> > matchingLongestRoute;
     for (std::vector<Location*>::const_iterator iter = this->_location.begin(); iter != this->_location.end(); ++iter) {
         const Location* const & locationPointer = *iter;
 
         if (locationPointer->isRouteMatch(targetResourceURI))
-            return locationPointer;
+            matchingLongestRoute.insert(make_pair(locationPointer->getRoute(), locationPointer));
     }
-
+    if (matchingLongestRoute.size())
+        return matchingLongestRoute.begin()->second;
     return NULL;
 }
 
@@ -156,7 +157,7 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
     std::string targetRepresentationURI;
 
     if (this->_others.find("return") != this->_others.end())
-        return this->set301Response(clientConnection, this->_others);
+        return this->set301Response(clientConnection,  this->_others);
     const Location* locationPointer = this->getMatchingLocation(request);
     if (locationPointer == NULL)
         return this->set404Response(clientConnection);
@@ -291,12 +292,15 @@ VirtualServer::ReturnCode VirtualServer::processPOST(Connection& clientConnectio
     const std::string& targetResourceURI = request.getTargetResourceURI();
     std::string targetRepresentationURI;
 
+    if (this->_others.find("return") != this->_others.end())
+        return this->set301Response(clientConnection,  this->_others);
     const Location* locationPointer = this->getMatchingLocation(request);
     if (locationPointer == NULL)
         return this->set400Response(clientConnection);
-
     const Location& location = *locationPointer;
-
+    const std::map<std::string, std::vector<std::string> > &locOthers = location.getOtherDirective();
+    if (locOthers.find("return") != locOthers.end())
+        return this->set301Response(clientConnection, locOthers);
     if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
         return this->set413Response(clientConnection);
 
@@ -384,12 +388,15 @@ VirtualServer::ReturnCode VirtualServer::processDELETE(Connection& clientConnect
     struct stat buf;
     std::string targetRepresentationURI;
 
+    if (this->_others.find("return") != this->_others.end())
+        return this->set301Response(clientConnection,  this->_others);
     const Location* locationPointer = this->getMatchingLocation(request);
     if (locationPointer == NULL)
         return this->set404Response(clientConnection);
-
     const Location& location = *locationPointer;
-
+    const std::map<std::string, std::vector<std::string> > &locOthers = location.getOtherDirective();
+    if (locOthers.find("return") != locOthers.end())
+        return this->set301Response(clientConnection, locOthers);
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
 
@@ -472,7 +479,7 @@ VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnec
     clientConnection.appendResponseMessage("\r\n");
     // location
     clientConnection.appendResponseMessage("Location: ");
-    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther));
+    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther) + clientConnection.getRequest().getTargetResourceURI().substr(1));
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("\r\n");
 
