@@ -99,17 +99,21 @@ EventContext::EventResult VirtualServer::eventSetVirtualServerErrorPage(EventCon
 //  - Return: See the type definition.
 VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnection, EventHandler& eventHandler) {
     const Request& request = clientConnection.getRequest();
+    ReturnCode returnCode;
 
     if (request.isParsingFail()) {
-        if (this->set400Response(clientConnection) == RC_ERROR)
-            return this->set500Response(clientConnection);
+        returnCode = this->set400Response(clientConnection);
+        if (returnCode == RC_ERROR)
+            returnCode = this->set500Response(clientConnection);
+        return returnCode;
     }
     else if (request.isLengthRequired()) {
-        if (this->set411Response(clientConnection) == RC_ERROR)
-            return this->set500Response(clientConnection);
+        returnCode = this->set411Response(clientConnection);
+        if (returnCode == RC_ERROR)
+            returnCode = this->set500Response(clientConnection);
+        return returnCode;
     }
 
-    ReturnCode returnCode;
     switch(request.getMethod()) {
         case HTTP::RM_GET:
             returnCode = processGET(clientConnection, eventHandler);
@@ -174,6 +178,9 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
     }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
+    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
+        return this->set413Response(clientConnection);
+
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
     if (stat(targetRepresentationURI.c_str(), &buf) == 0
             && (buf.st_mode & S_IFREG) != 0) {
@@ -313,14 +320,12 @@ VirtualServer::ReturnCode VirtualServer::processPOST(Connection& clientConnectio
         if (locOthers.find("return")->second.front().compare("308") == 0)
             return this->set308Response(clientConnection, locOthers);
         return this->set301Response(clientConnection, locOthers);
-    }
+    if (!location.isRequestMethodAllowed(request.getMethod()))
+        return this->set405Response(clientConnection, &location);
     if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
         return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
-    if (!location.isRequestMethodAllowed(request.getMethod()))
-        return this->set405Response(clientConnection, &location);
-
     const int targetFileFD = open(targetRepresentationURI.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (targetFileFD == -1)
         return RC_ERROR;
@@ -418,6 +423,8 @@ VirtualServer::ReturnCode VirtualServer::processDELETE(Connection& clientConnect
     }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
+    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
+        return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
     if (stat(targetRepresentationURI.c_str(), &buf) == 0) {
