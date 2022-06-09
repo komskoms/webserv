@@ -320,6 +320,7 @@ VirtualServer::ReturnCode VirtualServer::processPOST(Connection& clientConnectio
         if (locOthers.find("return")->second.front().compare("308") == 0)
             return this->set308Response(clientConnection, locOthers);
         return this->set301Response(clientConnection, locOthers);
+    }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
     if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
