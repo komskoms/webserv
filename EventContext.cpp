@@ -2,12 +2,12 @@
 
 EventContext::EventContext(int fd, EventType type, void* data)
 : _eventIdent(fd)
-, _callerType(type)
+, _eventType(type)
 , _data(data) {
 }
 
-std::string EventContext::getCallerTypeToString() {
-	switch (this->_callerType) {
+std::string EventContext::eventTypeToString(EventType type) {
+	switch (type) {
 	case EV_Accept:
 		return "EV_Accept";
 	case EV_SetVirtualServer:
@@ -18,6 +18,8 @@ std::string EventContext::getCallerTypeToString() {
 		return "EV_Request";
 	case EV_Response:
 		return "EV_Response";
+	case EV_CGIParamBody:
+		return "EV_CGIResponse";
 	case EV_CGIResponse:
 		return "EV_CGIResponse";
     case EV_SetVirtualServerErrorPage:

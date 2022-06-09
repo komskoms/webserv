@@ -51,7 +51,7 @@ public:
     void initializeConnection(std::set<port_t>&  ports);
 
     VirtualServer& getTargetVirtualServer(Connection& connection);
-    void acceptConnection(int ident);
+    void eventAcceptConnection(int ident);
     void run();
 
 private:
@@ -69,10 +69,10 @@ private:
     EventHandler _eventHandler;
 
     VirtualServer* makeVirtualServer(VirtualServerConfig* serverConf);
-    void acceptConnection(Connection* connection);
+    void eventAcceptConnection(Connection* connection);
     void handleUserFlaggedEvent(struct kevent event);
 
-    EventContext::EventResult driveThisEvent(EventContext* context, int filter);
+    EventContext::EventResult driveThisEvent(EventContext* context);
     void runEachEvent(struct kevent event);
     void callVirtualServerMethod(EventContext* context);
 

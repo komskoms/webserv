@@ -304,6 +304,7 @@ HTTP::RequestMethod Request::requestMethodByString(const std::string& token) {
     return method;
 }
 
+
 //  make value to lower case string.
 //  - Parameters value: the string to make lower case.
 //  - Return(None)

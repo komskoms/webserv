@@ -73,6 +73,7 @@ public:
     std::string getMessage() const { return this->_message; };
     const std::string* getFirstHeaderFieldValueByName(const std::string& name) const;
     const std::string& getBody() const { return this->_body; };
+    const std::vector<std::string> getTargetToken() const { return this->_targetToken; };
 
     void clearMessage();
     void resetStatus() { this->_parsingStatus = S_NONE; };
@@ -80,12 +81,14 @@ public:
     bool isLengthRequired() const { return this->_parsingStatus == S_LENGTH_REQUIRED; };
 
     ReturnCaseOfRecv receive(int clientSocketFD);
+    void updateParsedTarget(std::string parsed);
 
 private:
     std::string _message;
 
     HTTP::RequestMethod _method;
     std::string _target;
+    std::vector<std::string> _targetToken;
     char _majorVersion;
     char _minorVersion;
 
@@ -111,5 +114,9 @@ private:
 
     HTTP::RequestMethod requestMethodByString(const std::string& token);
 };
+
+inline void Request::updateParsedTarget(std::string parsed){    
+    this->_targetToken.push_back(parsed);
+}
 
 #endif  // REQUEST_HPP_

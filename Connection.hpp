@@ -51,17 +51,18 @@ public:
     void setTargetVirtualServer(VirtualServer* targetVirtualServer) { this->_targetVirtualServer = targetVirtualServer; };
 
     Connection* acceptClient();
-    EventContext::EventResult receive();
-    EventContext::EventResult transmit();
+    EventContext::EventResult eventReceive();
+    EventContext::EventResult eventTransmit();
     void dispose();
     void clearRequestMessage();
     void resetRequestStatus() { this->_request.resetStatus(); };
     void clearResponseMessage();
     void appendResponseMessage(const std::string& message);
-    EventContext::EventResult handleCGIParamBody(int PipeToCGI);
-    EventContext::EventResult handleCGIResponse(int PipeFromCGI);
+    EventContext::EventResult eventCGIParamBody(int PipeToCGI);
+    EventContext::EventResult eventCGIResponse(int PipeFromCGI);
     void addKevent(int filter, int fd, EventContext::EventType type, void* data);
-
+    void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention);
+        
     class MAKESOCKETFAIL: public std::exception {
     public:
         virtual const char* what() const throw() {

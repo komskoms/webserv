@@ -27,13 +27,14 @@ public:
 	EventContext(int fd, EventType type, void* data);
 
 	int getIdent() { return _eventIdent; };
-	EventType getCallerType() { return _callerType; };
-	std::string getCallerTypeToString();
+	EventType getEventType() { return _eventType; };
+	std::string eventTypeToString(EventType type);
+	std::string getEventTypeToString() { return this->eventTypeToString(_eventType); };
 	void* getData() { return _data; };
 
 private:
 	int _eventIdent;
-	EventType	_callerType;
+	EventType	_eventType;
 	void* _data;
 };
 

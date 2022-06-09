@@ -195,8 +195,9 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
         targetExtention
     );
     if ( findResult != cgiExtensionOnLocation.end()) {
+        clientConnection.parseCGIurl(targetResourceURI, targetExtention);
         this->fillCGIEnvMap(clientConnection, location);
-        return this->passCGI(clientConnection);
+        return this->passCGI(clientConnection, location);
     }
 
     if (stat(targetRepresentationURI.c_str(), &buf) == 0
@@ -845,10 +846,11 @@ static void updateContentType(const std::string& name, std::string& type) {
 //      type: type to set
 //  - Return(None)
 static void updateExtension(const std::string& name, std::string& extension) {
-    const std::string::size_type extensionBeginPosition = name.rfind('.');
+    const std::string::size_type extensionBeginPosition = name.rfind('.'); // NOTE : http://localhost/first/test.cgi/bin/var?name=ccc&value=4.5 <- last comma?
+    const std::string::size_type extensionEndPosition = name.find_first_of(std::string("/?"), extensionBeginPosition); // NOTE: except fragment
     extension.clear();
     if (extensionBeginPosition !=  std::string::npos)
-        extension = name.c_str() + extensionBeginPosition;
+        extension = name.substr(extensionBeginPosition, extensionEndPosition - extensionBeginPosition);
 }
 
 //  generate body string with index, description.
@@ -911,6 +913,7 @@ inline void insertToStringMap(StringMap& envMap, std::string key, std::string va
 void VirtualServer::fillCGIEnvMap(Connection& clientConnection, Location location) {
 	StringMap& em = this->_CGIEnvironmentMap;
     const Request& request = clientConnection.getRequest();
+    const std::vector<std::string> uriInfo = clientConnection.getRequest().getTargetToken();
 
     insertToStringMap(em, "SERVER_SOFTWARE", "FTServer/0.1");
     insertToStringMap(em, "SERVER_NAME", "NoName");
@@ -919,10 +922,10 @@ void VirtualServer::fillCGIEnvMap(Connection& clientConnection, Location locatio
     insertToStringMap(em, "SERVER_PROTOCOL", "HTTP/1.1");
 	insertToStringMap(em, "SERVER_PORT", "80");
     insertToStringMap(em, "REQUEST_METHOD", "POST");
-    insertToStringMap(em, "PATH_INFO", location.getRoute());
-    insertToStringMap(em, "PATH_TRANSLATED", location.getRoot() + "uri_path");
-    insertToStringMap(em, "SCRIPT_NAME", "script requested");
-    insertToStringMap(em, "QUERY_STRING", "query string");
+    insertToStringMap(em, "PATH_INFO", uriInfo[1]);
+    insertToStringMap(em, "PATH_TRANSLATED", location.getRoot() + uriInfo[1]);
+    insertToStringMap(em, "SCRIPT_NAME", uriInfo[0]);
+    insertToStringMap(em, "QUERY_STRING", uriInfo[2]);
     insertToStringMap(em, "REMOTE_HOST", "");
     insertToStringMap(em, "REMOTE_ADDR", "");
     insertToStringMap(em, "AUTH_TYPE", this->getHeaderValue(request, "Authorization"));
@@ -946,7 +949,7 @@ char** VirtualServer::makeCGIEnvironmentArray() {
             iter++) {
 		element = iter->first + "=" + iter->second;
 		result[idx] = new char[element.length() + 1];
-        strlcpy(result[idx], element.c_str(), element.length());
+        strlcpy(result[idx], element.c_str(), element.length() + 1);
         idx++;
 	}
 	result[idx] = NULL;
@@ -957,12 +960,27 @@ char** VirtualServer::makeCGIEnvironmentArray() {
 //  - Parameters:
 //      clientConnection: The Connection object of client who is requesting.
 //  - Return ( ReturnCode )
-VirtualServer::ReturnCode VirtualServer::passCGI(Connection& clientConnection) {
+VirtualServer::ReturnCode VirtualServer::passCGI(Connection& clientConnection, const Location& location) {
 	pid_t pid;
+    char* argScript[2];
 	char** envp;
-	std::string	cgiOutput = "";
     int pipeToChild[2];
     int pipeFromChild[2];
+    const char* cgiPath;
+    const std::map<std::string, std::vector<std::string> > & locOther = location.getOtherDirective();
+    std::map<std::string, std::vector<std::string> >::const_iterator findResult;
+    std::vector<std::string>::iterator directiveCGIPath;
+
+    
+    findResult = locOther.find("cgi_path");
+    if (findResult != locOther.end()) {
+        cgiPath = findResult->second[0].c_str();
+        argScript[0] = const_cast<char*>(_CGIEnvironmentMap["asdf"].c_str());
+        argScript[1] = NULL;
+    } else {
+        Log::warning("CGI: cgi_path is not defined.");
+        return RC_ERROR;
+    }
 
 	try {
 		envp = this->makeCGIEnvironmentArray();
@@ -979,7 +997,7 @@ VirtualServer::ReturnCode VirtualServer::passCGI(Connection& clientConnection) {
     if (pid == ChildProcess) {
 		dup2(pipeToChild[0], STDIN_FILENO);
 		dup2(pipeFromChild[1], STDOUT_FILENO);
-		execve("../cgi_tester", NULL, const_cast<char*const*>(envp));
+		execve(cgiPath, argScript, const_cast<char*const*>(envp));
 		write(STDOUT_FILENO, "Status: 500\r\n\r\n", 15);
         Log::error("VirtualServer::passCGI execve() Failed.");
         return RC_ERROR;

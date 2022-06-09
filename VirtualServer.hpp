@@ -177,7 +177,7 @@ private:
     std::string getHeaderValue(const Request& request, std::string key);
     void fillCGIEnvMap(Connection& clientConnection, Location location);
     char** makeCGIEnvironmentArray();
-    ReturnCode passCGI(Connection& clientConnection);
+    ReturnCode passCGI(Connection& clientConnection, const Location& location);
 };  // VirtualServer
 
 #endif  // VIRTUALSERVER_HPP_

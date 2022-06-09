@@ -64,7 +64,7 @@ Connection* Connection::acceptClient() {
 // The way how Connection class handles receive event.
 //  - Return
 //      Result of receiving process.
-EventContext::EventResult Connection::receive() {
+EventContext::EventResult Connection::eventReceive() {
     ReturnCaseOfRecv result = this->_request.receive(this->_ident);
 
 	switch (result) {
@@ -86,7 +86,7 @@ EventContext::EventResult Connection::receive() {
 //  Send response message to client.
 //  - Parameters(None)
 //  - Return(None)
-EventContext::EventResult Connection::transmit() {
+EventContext::EventResult Connection::eventTransmit() {
     ReturnCaseOfSend result = this->_response.sendResponseMessage(this->_ident);
 
     switch (result) {
@@ -118,7 +118,7 @@ void Connection::dispose() {
 	);
 }
 
-EventContext::EventResult Connection::handleCGIParamBody(int PipeToCGI) {
+EventContext::EventResult Connection::eventCGIParamBody(int PipeToCGI) {
 	std::string body = this->getRequest().getBody();
 	size_t leftSize = body.length();
 	size_t offset = 0;
@@ -128,19 +128,20 @@ EventContext::EventResult Connection::handleCGIParamBody(int PipeToCGI) {
     case -1:
         Log::warning("CGI body pass failed.");
     case 0:
-		close(PipeToCGI);
         return EventContext::ER_Remove;
     default:
 		leftSize -= writeResult;
 		offset += writeResult;
         return EventContext::ER_Continue;
     }
+    if (leftSize == 0)
+        return EventContext::ER_Remove;
 }
 
-EventContext::EventResult Connection::handleCGIResponse(int PipeFromCGI) {
+EventContext::EventResult Connection::eventCGIResponse(int PipeFromCGI) {
     char buffer[BUF_SIZE];
     ssize_t result = read(PipeFromCGI, buffer, BUF_SIZE - 1);
-
+std::cout<<buffer <<std::endl;
     switch (result) {
     case 0:
         this->_response.processCGIResponse();
@@ -151,7 +152,7 @@ EventContext::EventResult Connection::handleCGIResponse(int PipeFromCGI) {
             this
         );
     case -1:
-        Log::debug("CGI pipe has been broken.");
+        Log::debug("CGI pipe has been broken while Respond.");
         return EventContext::ER_Remove;
     default:
         buffer[result] = '\0';
@@ -219,4 +220,16 @@ EventContext::EventResult Connection::passParsedRequest() {
         this
 	);
 	return EventContext::ER_Done;
+}
+
+void Connection::parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention) {
+    const std::string::size_type targetExtBeginPos = targetResourceURI.find(targetExtention);
+    const std::string::size_type targetQueryBeginPos = targetResourceURI.find_first_of(std::string("?"), targetExtBeginPos);
+    std::string scriptName = targetResourceURI.substr(0, targetExtBeginPos + targetExtention.size());
+    std::string pathInfo = targetResourceURI.substr(targetExtBeginPos + targetExtention.size(), targetQueryBeginPos - (targetExtBeginPos + targetExtention.size()));
+    std::string queryString = targetResourceURI.substr(targetQueryBeginPos + 1);;
+
+    this->_request.updateParsedTarget(scriptName);
+    this->_request.updateParsedTarget(pathInfo);
+    this->_request.updateParsedTarget(queryString);
 }

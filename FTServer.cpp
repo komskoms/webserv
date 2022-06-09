@@ -90,9 +90,6 @@ void FTServer::initParseConfig(std::string filePath) {
 
 //  Initialize server manager from server config set.
 void FTServer::init() {
-    if (_eventHandler.getKqueue() < 0)
-        throw std::runtime_error("Kqueue Initiation Failed.");
-
     this->initializeVirtualServers();
 
     std::set<port_t>     portsOpen;
@@ -182,16 +179,12 @@ void FTServer::initializeConnection(std::set<port_t>& ports) {
     for (std::set<port_t>::iterator itr = ports.begin(); itr != ports.end(); itr++) {
         Connection* newConnection = new Connection(*itr, _eventHandler);
         this->_mConnection.insert(std::make_pair(newConnection->getIdent(), newConnection));
-        try {
-            _eventHandler.addEvent(
-                EVFILT_READ,
-                newConnection->getIdent(),
-                EventContext::EV_Accept,
-                this
-            );
-        } catch(std::exception& exep) {
-            Log::verbose(exep.what());
-        }
+        _eventHandler.addEvent(
+            EVFILT_READ,
+            newConnection->getIdent(),
+            EventContext::EV_Accept,
+            this
+        );
     }
 }
 
@@ -199,24 +192,20 @@ void FTServer::initializeConnection(std::set<port_t>& ports) {
 //  - Parameter
 //      socket: server socket which made a handshake with the incoming client.
 //  - Return(none)
-void FTServer::acceptConnection(Connection* connection) {
+void FTServer::eventAcceptConnection(Connection* connection) {
     Connection* newConnection = connection->acceptClient();
     this->_mConnection.insert(std::make_pair(newConnection->getIdent(), newConnection));
-    try {
-        _eventHandler.addEvent(
-            EVFILT_READ,
-            newConnection->getIdent(),
-            EventContext::EV_Request,
-            newConnection
-        );
-    } catch(std::exception& excep) {
-        Log::verbose(excep.what());
-    }
+    _eventHandler.addEvent(
+        EVFILT_READ,
+        newConnection->getIdent(),
+        EventContext::EV_Request,
+        newConnection
+    );
     Log::verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
 
-void FTServer::acceptConnection(int ident) {
-    return this->acceptConnection(_mConnection[ident]);
+void FTServer::eventAcceptConnection(int ident) {
+    return this->eventAcceptConnection(_mConnection[ident]);
 }
 
 void FTServer::callVirtualServerMethod(EventContext* context) {
@@ -254,7 +243,7 @@ void FTServer::handleUserFlaggedEvent(struct kevent event) {
 
     if (event.filter != EVFILT_USER)
         return;
-	switch (context->getCallerType()) {
+	switch (context->getEventType()) {
 	case EventContext::EV_SetVirtualServer:
         this->callVirtualServerMethod(context);
 		break;
@@ -296,7 +285,7 @@ void FTServer::run() {
     try {
         numbers = _eventHandler.checkEvent(events);
         if (numbers < 0) {
-            Log::verbose("VirtualServer::run kevent error [%d]", errno);
+            Log::warning("kevent error [%s]", strerror(errno));
             continue;
         }
         for (int i = 0; i < numbers; i++) {
@@ -316,20 +305,20 @@ void FTServer::run() {
 //      filter: filter for triggered event
 //  - Returns
 //      Result flag of handled event
-EventContext::EventResult FTServer::driveThisEvent(EventContext* context, int filter) {
+EventContext::EventResult FTServer::driveThisEvent(EventContext* context) {
     Connection* connection = static_cast<Connection*>(context->getData());
-	switch (context->getCallerType()) {
+	switch (context->getEventType()) {
 	case EventContext::EV_Accept:
-		this->acceptConnection(context->getIdent());
+		this->eventAcceptConnection(context->getIdent());
 		return EventContext::ER_Continue;
 	case EventContext::EV_Request:
-		return connection->receive();
+		return connection->eventReceive();
 	case EventContext::EV_Response:
-		return connection->transmit();
+		return connection->eventTransmit();
 	case EventContext::EV_CGIParamBody:
-        return connection->handleCGIParamBody(context->getIdent());
+        return connection->eventCGIParamBody(context->getIdent());
 	case EventContext::EV_CGIResponse:
-        return connection->handleCGIResponse(context->getIdent());
+        return connection->eventCGIResponse(context->getIdent());
     case EventContext::EV_SetVirtualServerErrorPage:
         return this->eventSetVirtualServerErrorPage(*context);
     case EventContext::EV_GETResponse:
@@ -354,14 +343,14 @@ void FTServer::runEachEvent(struct kevent event) {
     if (filter == EVFILT_USER)
         return ;
 
-	eventResult = this->driveThisEvent(context, filter);
+	eventResult = this->driveThisEvent(context);
 
 	switch (eventResult) {
 	case EventContext::ER_Done:
 	case EventContext::ER_Continue:
 		break ;
 	case EventContext::ER_NA:
-		Log::debug("EventContext is not applicalble. (%d): %s", context->getIdent(), context->getCallerTypeToString().c_str());
+		Log::debug("EventContext is not applicalble. (%d): %s", context->getIdent(), context->getEventTypeToString().c_str());
 	case EventContext::ER_Remove:
 		_eventHandler.removeEvent(filter, context);
 	}
