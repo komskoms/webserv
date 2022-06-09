@@ -4,6 +4,7 @@
 const int BUF_SIZE = 0x1 << 10;
 const int LISTEN_BACKLOG = 40;
 const int DEFAULT_CLIENT_MAX_BODY_SIZE = 100000;
+const int TIMEOUT = 6000;
 const std::string REDIRECT_PATH = "/Users/mike2ox/Project/webserve/html/redirect.html";
 const std::string DEFAULT_CONF_PATH = "./conf/sample.conf";
 

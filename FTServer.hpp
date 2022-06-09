@@ -72,13 +72,14 @@ private:
     void eventAcceptConnection(Connection* connection);
     void handleUserFlaggedEvent(struct kevent event);
 
-    EventContext::EventResult driveThisEvent(EventContext* context);
+    EventContext::EventResult driveThisEvent(int ident, EventContext* context, int filter);
     void runEachEvent(struct kevent event);
     void callVirtualServerMethod(EventContext* context);
 
     EventContext::EventResult eventSetVirtualServerErrorPage(EventContext& context);
     EventContext::EventResult eventGETResponse(EventContext& context);
     EventContext::EventResult eventPOSTResponse(EventContext& context);
+    EventContext::EventResult eventTimeout(int ident);
     void printParseResult();
 };
 

@@ -1,4 +1,5 @@
 #include "EventHandler.hpp"
+#include "constant.hpp"
 
 EventHandler::EventHandler()
 : _kqueue(kqueue())
@@ -81,4 +82,23 @@ void EventHandler::addUserEvent(int fd, EventContext::EventType type, void* data
 
 int EventHandler::checkEvent(struct kevent* eventlist) {
 	return kevent(this->_kqueue, NULL, 0, eventlist, _maxEvent, NULL);
+}
+
+void EventHandler::addTimeoutEvent(int fd) {
+    struct kevent ev;
+
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, NULL);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("AddEvent(Oneshot flagged) Failed.");
+}
+
+void EventHandler::resetTimeoutEvent(int fd) {
+    struct kevent ev;
+
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_DELETE, 0, TIMEOUT, NULL);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("AddEvent(timeout) Failed.");
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, NULL);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("AddEvent(timeout) Failed.");
 }

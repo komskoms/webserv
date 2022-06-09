@@ -208,6 +208,7 @@ void FTServer::eventAcceptConnection(Connection* connection) {
         EventContext::EV_Request,
         newConnection
     );
+    _eventHandler.addTimeoutEvent(newConnection->getIdent());
     Log::verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
 
@@ -217,10 +218,13 @@ void FTServer::eventAcceptConnection(int ident) {
 
 void FTServer::callVirtualServerMethod(EventContext* context) {
     Connection* connection = static_cast<Connection*>(context->getData());
+    if (connection->isClosed())
+        return;
     VirtualServer& matchingServer = getTargetVirtualServer(*connection);
     connection->setTargetVirtualServer(&matchingServer);
     VirtualServer::ReturnCode result;
 
+    _eventHandler.resetTimeoutEvent(context->getIdent());
     result = matchingServer.processRequest(*connection, this->_eventHandler);
     connection->resetRequestStatus();
     switch (result) {
@@ -312,7 +316,10 @@ void FTServer::run() {
 //      filter: filter for triggered event
 //  - Returns
 //      Result flag of handled event
-EventContext::EventResult FTServer::driveThisEvent(EventContext* context) {
+EventContext::EventResult FTServer::driveThisEvent(int ident, EventContext* context, int filter) {
+    if (filter == EVFILT_TIMER)
+        return eventTimeout(ident);
+
     Connection* connection = static_cast<Connection*>(context->getData());
 	switch (context->getEventType()) {
 	case EventContext::EV_Accept:
@@ -343,6 +350,7 @@ EventContext::EventResult FTServer::driveThisEvent(EventContext* context) {
 //      event: event to process
 //  - Return ( None )
 void FTServer::runEachEvent(struct kevent event) {
+    const int ident = event.ident;
     EventContext* context = (EventContext*)event.udata;
 	int filter = event.filter;
 	int eventResult;
@@ -350,7 +358,7 @@ void FTServer::runEachEvent(struct kevent event) {
     if (filter == EVFILT_USER)
         return ;
 
-	eventResult = this->driveThisEvent(context);
+	eventResult = this->driveThisEvent(ident, context, filter);
 
 	switch (eventResult) {
 	case EventContext::ER_Done:
@@ -361,7 +369,6 @@ void FTServer::runEachEvent(struct kevent event) {
 	case EventContext::ER_Remove:
 		_eventHandler.removeEvent(filter, context);
 	}
-
 }
 
 //  event function reading a file and setting error page.
@@ -393,6 +400,18 @@ EventContext::EventResult FTServer::eventPOSTResponse(EventContext& context) {
 
     return targetVirtualServer->eventPOSTResponse(context, this->_eventHandler);
 }
+
+//  event function called when client connection exceeded request timeout.
+//  - Parameters context: context of event.
+//  - Return: result of event.
+EventContext::EventResult FTServer::eventTimeout(int ident) {
+    Connection* const timeoutedClientConnection = this->_mConnection[ident];
+
+    timeoutedClientConnection->dispose();
+
+    return EventContext::ER_Done;
+}
+
 void FTServer::printParseResult() {
     // default 서버
     // serverblock별

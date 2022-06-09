@@ -25,6 +25,8 @@ public:
 	void removeEvent(int filter, EventContext* context);
 	void addUserEvent(int fd, EventContext::EventType type, void* data);
 	int checkEvent(struct kevent* eventlist);
+    void addTimeoutEvent(int fd);
+    void resetTimeoutEvent(int fd);
 
 private:
 	const int _kqueue;
