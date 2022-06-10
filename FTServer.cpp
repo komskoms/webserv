@@ -120,8 +120,11 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
 
     std::stringstream ss;
     std::size_t cmbs;
-
-    newVirtualServer = new VirtualServer(static_cast<port_t>(std::atoi(config["listen"].front().c_str())),
+    if (config["server_name"].empty())
+        newVirtualServer = new VirtualServer(static_cast<port_t>(std::atoi(config["listen"].front().c_str())),
+                            "");
+    else
+        newVirtualServer = new VirtualServer(static_cast<port_t>(std::atoi(config["listen"].front().c_str())),
                             config["server_name"].front());
 
     for (directiveContainer::iterator itr = config.begin(); itr != config.end(); itr++) {
