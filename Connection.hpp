@@ -55,6 +55,7 @@ public:
     EventContext::EventResult transmit();
     void dispose();
     void clearRequestMessage();
+    void resetRequestStatus() { this->_request.resetStatus(); };
     void clearResponseMessage();
     void appendResponseMessage(const std::string& message);
     EventContext::EventResult handleCGIParamBody(int PipeToCGI);

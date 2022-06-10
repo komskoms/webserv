@@ -226,6 +226,7 @@ void FTServer::callVirtualServerMethod(EventContext* context) {
     VirtualServer::ReturnCode result;
 
     result = matchingServer.processRequest(*connection, this->_eventHandler);
+    connection->resetRequestStatus();
     switch (result) {
         case VirtualServer::RC_ERROR:
             break;
@@ -317,8 +318,6 @@ void FTServer::run() {
 //      Result flag of handled event
 EventContext::EventResult FTServer::driveThisEvent(EventContext* context, int filter) {
     Connection* connection = static_cast<Connection*>(context->getData());
-	if (filter != EVFILT_WRITE || filter != EVFILT_READ)
-		return EventContext::ER_NA;
 	switch (context->getCallerType()) {
 	case EventContext::EV_Accept:
 		this->acceptConnection(context->getIdent());
