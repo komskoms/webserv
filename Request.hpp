@@ -115,8 +115,4 @@ private:
     HTTP::RequestMethod requestMethodByString(const std::string& token);
 };
 
-inline void Request::updateParsedTarget(std::string parsed){    
-    this->_targetToken.push_back(parsed);
-}
-
 #endif  // REQUEST_HPP_

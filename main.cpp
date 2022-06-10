@@ -2,7 +2,6 @@
 #include "FTServer.hpp"
 
 int main(int argc, char **argv) {
-    FTServer ftServer;
 	std::string configFile;
 
 	if (argc != 2) {
@@ -11,6 +10,8 @@ int main(int argc, char **argv) {
 	} else
 		configFile = argv[1];
 	try {
+	    FTServer ftServer;
+
         ftServer.initParseConfig(configFile);
 		ftServer.init();
 		ftServer.run();

@@ -22,10 +22,11 @@ void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, vo
 	EventContext* context = new EventContext(fd, type ,data);
 
     EV_SET(&ev, fd, filter, EV_ADD | EV_ENABLE, 0, 0, context);
-    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0) {
 		delete context;
 		Log::warning("Event add Failure. [%d] [%s].", fd, type);
         throw std::runtime_error(strerror(errno));
+	}
 }
 
 // Remove existing event on Kqueue
