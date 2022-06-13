@@ -46,8 +46,3 @@ ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
         return RCSEND_ALL;
     }
 }
-
-#include <iostream>
-void Response::processCGIResponse() {
-    std::cout << "---response processing procedure---" << std::endl;
-}

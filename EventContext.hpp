@@ -31,10 +31,14 @@ public:
 	std::string eventTypeToString(EventType type);
 	std::string getEventTypeToString() { return this->eventTypeToString(_eventType); };
 	void* getData() { return _data; };
+	int getReadPipe() { return _pipe[0]; };
+	int getWritePipe() { return _pipe[1]; };
+	void setPipe(int readPipe, int writePipe);
 
 private:
 	int _eventIdent;
 	EventType	_eventType;
+	int _pipe[2];
 	void* _data;
 };
 

@@ -4,6 +4,7 @@ EventContext::EventContext(int fd, EventType type, void* data)
 : _eventIdent(fd)
 , _eventType(type)
 , _data(data) {
+	this->setPipe(-1, -1);
 }
 
 std::string EventContext::eventTypeToString(EventType type) {
@@ -29,4 +30,9 @@ std::string EventContext::eventTypeToString(EventType type) {
     case EV_POSTResponse:
         return "EV_POSTResponse";
 	}
+}
+
+void EventContext::setPipe(int readPipe, int writePipe) {
+	_pipe[0] = readPipe;
+	_pipe[1] = writePipe;
 }

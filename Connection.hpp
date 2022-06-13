@@ -58,9 +58,10 @@ public:
     void resetRequestStatus() { this->_request.resetStatus(); };
     void clearResponseMessage();
     void appendResponseMessage(const std::string& message);
-    EventContext::EventResult eventCGIParamBody(int PipeToCGI);
-    EventContext::EventResult eventCGIResponse(int PipeFromCGI);
+    EventContext::EventResult eventCGIParamBody(EventContext& context);
+    EventContext::EventResult eventCGIResponse(EventContext& context);
     void addKevent(int filter, int fd, EventContext::EventType type, void* data);
+    void addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
     void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention);
         
     class MAKESOCKETFAIL: public std::exception {

@@ -21,6 +21,7 @@ public:
 	int getMaxEvent() { return _maxEvent; };
 
 	void addEvent(int filter, int fd, EventContext::EventType type, void* data);
+	void addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
 	void removeEvent(int filter, EventContext* context);
 	void addUserEvent(int fd, EventContext::EventType type, void* data);
 	int checkEvent(struct kevent* eventlist);

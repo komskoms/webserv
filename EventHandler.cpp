@@ -29,6 +29,19 @@ void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, vo
 	}
 }
 
+void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
+	struct kevent ev;
+	EventContext* context = new EventContext(fd, type ,data);
+
+	context->setPipe(pipe[0], pipe[1]);
+    EV_SET(&ev, fd, filter, EV_ADD | EV_ENABLE, 0, 0, context);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0) {
+		delete context;
+		Log::warning("Event add Failure. [%d] [%d].", fd, type); // todo stupid
+        throw std::runtime_error(strerror(errno));
+	}
+}
+
 // Remove existing event on Kqueue
 //  - Parameters
 //      kqueue: FD number of Kqueue
@@ -40,13 +53,17 @@ void EventHandler::removeEvent(int filter, EventContext* context) {
 	EventContext::EventType eventType = context->getEventType();
 	int fd = context->getIdent();
 
-    EV_SET(&ev, fd, filter, EV_DELETE, 0, 0, context);
-    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
-        throw std::runtime_error("RemoveEvent Failed.");
-	delete context;
 	if (eventType == EventContext::EV_CGIParamBody ||
-		eventType == EventContext::EV_CGIResponse)
-		close(fd);
+		eventType == EventContext::EV_CGIResponse) {
+        close(context->getReadPipe());
+        close(context->getWritePipe());
+		Log::verbose("CGI pipe closed. [%d] [%d]", context->getReadPipe(), context->getWritePipe());
+	} else {
+		EV_SET(&ev, fd, filter, EV_DELETE, 0, 0, context);
+		if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+			throw std::runtime_error("RemoveEvent Failed.");
+	}
+	delete context;
 }
 
 // Add custom event on Kqueue (triggered just for 1 time)

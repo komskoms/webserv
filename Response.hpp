@@ -29,7 +29,6 @@ public:
     void appendMessage(const std::string& message);
 
     ReturnCaseOfSend sendResponseMessage(int clientSocket);
-    void processCGIResponse();
 
 private:
     std::string _message;

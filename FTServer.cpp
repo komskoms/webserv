@@ -316,9 +316,9 @@ EventContext::EventResult FTServer::driveThisEvent(EventContext* context) {
 	case EventContext::EV_Response:
 		return connection->eventTransmit();
 	case EventContext::EV_CGIParamBody:
-        return connection->eventCGIParamBody(context->getIdent());
+        return connection->eventCGIParamBody(*context);
 	case EventContext::EV_CGIResponse:
-        return connection->eventCGIResponse(context->getIdent());
+        return connection->eventCGIResponse(*context);
     case EventContext::EV_SetVirtualServerErrorPage:
         return this->eventSetVirtualServerErrorPage(*context);
     case EventContext::EV_GETResponse:

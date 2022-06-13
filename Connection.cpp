@@ -118,11 +118,12 @@ void Connection::dispose() {
 	);
 }
 
-EventContext::EventResult Connection::eventCGIParamBody(int PipeToCGI) {
+EventContext::EventResult Connection::eventCGIParamBody(EventContext& context) {
 	std::string body = this->getRequest().getBody();
+    int PipeToCGI = context.getIdent();
 	size_t leftSize = body.length();
 	size_t offset = 0;
-    ssize_t writeResult = write(PipeToCGI, body.c_str() + offset, BUF_SIZE - 1);
+    ssize_t writeResult = write(PipeToCGI, body.c_str() + offset, leftSize);
 
     switch (writeResult) {
     case -1:
@@ -132,27 +133,29 @@ EventContext::EventResult Connection::eventCGIParamBody(int PipeToCGI) {
     default:
 		leftSize -= writeResult;
 		offset += writeResult;
+        if (leftSize == 0) {
+            return EventContext::ER_Remove;
+        }
         return EventContext::ER_Continue;
     }
-    if (leftSize == 0)
-        return EventContext::ER_Remove;
 }
 
-EventContext::EventResult Connection::eventCGIResponse(int PipeFromCGI) {
+EventContext::EventResult Connection::eventCGIResponse(EventContext& context) {
     char buffer[BUF_SIZE];
+    int PipeFromCGI = context.getIdent();
     ssize_t result = read(PipeFromCGI, buffer, BUF_SIZE - 1);
-std::cout<<buffer <<std::endl;
+
     switch (result) {
     case 0:
-        this->_response.processCGIResponse();
         this->_eventHandler.addEvent(
             EVFILT_WRITE,
             this->_ident,
             EventContext::EV_Response,
             this
         );
+        return EventContext::ER_Remove;
     case -1:
-        Log::debug("CGI pipe has been broken while Respond.");
+        Log::warning("CGI pipe has been broken while Respond.");
         return EventContext::ER_Remove;
     default:
         buffer[result] = '\0';
@@ -163,6 +166,10 @@ std::cout<<buffer <<std::endl;
 
 void Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data) {
     this->_eventHandler.addEvent(filter, fd, type, data);
+}
+
+void Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
+    this->_eventHandler.addEvent(filter, fd, type, data, pipe);
 }
 
 // Creates new Connection and set for the attribute.
