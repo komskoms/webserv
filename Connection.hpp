@@ -88,7 +88,11 @@ public:
             return "listen() fail error!!";
         }
     };
-    
+
+    void initResponseBodyBySize(std::string::size_type size) { this->_response.initBodyBySize(size); };
+    void memcpyResponseMessage(char* buf, ssize_t size) { this->_response.memcpyMessage(buf, size); };
+    bool isResponseReadAllFile() { return this->_response.isReadAllFile(); };
+
 private:
     bool _client;
     int _ident;
