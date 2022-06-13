@@ -23,12 +23,12 @@ const Status Status::_array[] = {
 static void updateContentType(const std::string& name, std::string& type);
 static void updateExtension(const std::string& name, std::string& extension);
 static void updateBodyString(HTTP::Status::Index index, const char* description, std::string& bodyString);
-
 //  Default constructor of VirtualServer.
 //  - Parameters(None)
 VirtualServer::VirtualServer() 
 : _portNumber(0),
-_name("")
+_name(""),
+_clientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE)
 {
 } 
 
@@ -124,6 +124,9 @@ VirtualServer::ReturnCode VirtualServer::processRequest(Connection& clientConnec
         case HTTP::RM_DELETE:
             returnCode = processDELETE(clientConnection);
             break;
+        case HTTP::RM_PUT:
+            returnCode = set201Response(clientConnection);
+            break;
         default:
             returnCode = set405Response(clientConnection, NULL);
             break;
@@ -178,7 +181,10 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
     }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
-    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
+    int targetClientMaxBodysize = location.getClientMaxBodySize();
+    if (targetClientMaxBodysize < 0)
+        targetClientMaxBodysize = this->_clientMaxBodySize;
+    if (request.getBody().length() > static_cast<std::string::size_type>(targetClientMaxBodysize))
         return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
@@ -224,8 +230,8 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
 
         return RC_IN_PROGRESS;
     }
-
-    if (stat(location.getIndex().c_str(), &buf) == 0
+    const std::string absoluteIndexPath = targetRepresentationURI + "/" + location.getIndex();
+    if (stat(absoluteIndexPath.c_str(), &buf) == 0
             && (buf.st_mode & S_IFREG) != 0) {
         this->appendStatusLine(clientConnection, Status::I_200);
 
@@ -252,8 +258,7 @@ VirtualServer::ReturnCode VirtualServer::processGET(Connection& clientConnection
 
         if (buf.st_size == 0)
             return RC_SUCCESS;
-
-        const int targetFileFD = open(location.getIndex().c_str(), O_RDONLY);
+        const int targetFileFD = open(absoluteIndexPath.c_str(), O_RDONLY);
         if (targetFileFD == -1)
             return RC_ERROR;
         if (fcntl(targetFileFD, F_SETFL, O_NONBLOCK) == -1) {
@@ -332,7 +337,10 @@ VirtualServer::ReturnCode VirtualServer::processPOST(Connection& clientConnectio
     }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
-    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
+    int targetClientMaxBodysize = location.getClientMaxBodySize();
+    if (targetClientMaxBodysize < 0)
+        targetClientMaxBodysize = this->_clientMaxBodySize;
+    if (request.getBody().length() > static_cast<std::string::size_type>(targetClientMaxBodysize))
         return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
@@ -433,7 +441,10 @@ VirtualServer::ReturnCode VirtualServer::processDELETE(Connection& clientConnect
     }
     if (!location.isRequestMethodAllowed(request.getMethod()))
         return this->set405Response(clientConnection, &location);
-    if (request.getBody().length() > static_cast<std::string::size_type>(location.getClientMaxBodySize()))
+    int targetClientMaxBodysize = location.getClientMaxBodySize();
+    if (targetClientMaxBodysize < 0)
+        targetClientMaxBodysize = this->_clientMaxBodySize;
+    if (request.getBody().length() > static_cast<std::string::size_type>(targetClientMaxBodysize))
         return this->set413Response(clientConnection);
 
     location.updateRepresentationPath(targetResourceURI, targetRepresentationURI);
@@ -496,6 +507,26 @@ void VirtualServer::updateBodyString(HTTP::Status::Index index, const char* desc
         ::updateBodyString(index, description, bodyString);
     else
         bodyString = errorPageIterator->second;
+}
+
+VirtualServer::ReturnCode VirtualServer::set201Response(Connection& clientConnection) {
+    clientConnection.clearResponseMessage();
+    this->appendStatusLine(clientConnection, Status::I_201);
+
+    std::string bodyString;
+    this->updateBodyString(Status::I_201, "file created", bodyString);
+
+    this->appendContentDefaultHeaderFields(clientConnection);
+    clientConnection.appendResponseMessage("Content-Length: ");
+    std::ostringstream oss;
+    oss << bodyString.length();
+    clientConnection.appendResponseMessage(oss.str());
+    clientConnection.appendResponseMessage("\r\n");
+    clientConnection.appendResponseMessage("Connection: keep-alive\r\n");
+    clientConnection.appendResponseMessage("\r\n");
+    clientConnection.appendResponseMessage(bodyString);
+
+    return RC_SUCCESS;
 }
 
 VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther) {
@@ -604,7 +635,8 @@ VirtualServer::ReturnCode VirtualServer::set405Response(Connection& clientConnec
 
 
     std::string bodyString;
-    this->updateBodyString(Status::I_405, NULL, bodyString);
+    std::string reqBody = clientConnection.getRequest().getBody();
+    this->updateBodyString(Status::I_405, reqBody.c_str(), bodyString);
 
     this->appendContentDefaultHeaderFields(clientConnection);
     clientConnection.appendResponseMessage("Content-Length: ");
