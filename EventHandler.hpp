@@ -19,18 +19,22 @@ public:
 
 	int getKqueue() { return _kqueue; };
 	int getMaxEvent() { return _maxEvent; };
+	bool isConnectionDeleted() { return _connectionDeleted; };
+	void setConnectionDeleted(bool set) { _connectionDeleted = set; };
 
-	void addEvent(int filter, int fd, EventContext::EventType type, void* data);
-	void addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
+	EventContext* addEvent(int filter, int fd, EventContext::EventType type, void* data);
+	EventContext* addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
 	void removeEvent(int filter, EventContext* context);
-	void addUserEvent(int fd, EventContext::EventType type, void* data);
+	EventContext* addUserEvent(int fd, EventContext::EventType type, void* data);
 	int checkEvent(struct kevent* eventlist);
-    void addTimeoutEvent(int fd);
-    void resetTimeoutEvent(int fd);
+    void addTimeoutEvent(EventContext* context);
+    void resetTimeoutEvent(EventContext* context);
+    void deleteTimeoutEvent(int fd);
 
 private:
 	const int _kqueue;
 	const int _maxEvent;
+	bool _connectionDeleted;
 
 	enum { MaxEventNumber = 20 };
 };

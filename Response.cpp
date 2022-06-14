@@ -3,6 +3,7 @@
 //  Constructor of Response.
 Response::Response()
 : _message("")
+, _messageDataSize(0)
 , _copyBegin(NULL)
 , _sendBegin(NULL) { }
 
@@ -26,10 +27,10 @@ void Response::appendMessage(const std::string& message) {
 //      clientSocket: The socket fd of client.
 //  - Returns: See the type definition.
 ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
-    if (this->_sendBegin == NULL)
+    if (this->_sendBegin == NULL) {
         this->_sendBegin = &this->_message[0];
-    if (this->_messageDataSize == 0)
         this->_messageDataSize = this->_message.length();
+    }
 
 
     const std::string::size_type sendedSize = this->_sendBegin - &this->_message[0];

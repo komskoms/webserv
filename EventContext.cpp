@@ -11,8 +11,8 @@ std::string EventContext::eventTypeToString(EventType type) {
 	switch (type) {
 	case EV_Accept:
 		return "EV_Accept";
-	case EV_SetVirtualServer:
-		return "EV_SetVirtualServer";
+	case EV_ProcessRequest:
+		return "EV_ProcessRequest";
 	case EV_DisposeConn:
 		return "EV_DisposeConn";
 	case EV_Request:

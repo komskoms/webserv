@@ -3,7 +3,8 @@
 
 EventHandler::EventHandler()
 : _kqueue(kqueue())
-, _maxEvent(MaxEventNumber) {
+, _maxEvent(MaxEventNumber)
+, _connectionDeleted(false) {
 	if (_kqueue < 0)
 		throw std::logic_error("Cannot create EventHandler.");
 }
@@ -18,7 +19,7 @@ EventHandler::~EventHandler() {
 //      filter: filter value for Kevent
 //      udata: user data (optional)
 //  - Return(none)
-void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data) {
+EventContext* EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data) {
 	struct kevent ev;
 	EventContext* context = new EventContext(fd, type ,data);
 
@@ -28,9 +29,10 @@ void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, vo
 		Log::warning("Event add Failure. [%d] [%s].", fd, type);
         throw std::runtime_error(strerror(errno));
 	}
+	return context;
 }
 
-void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
+EventContext* EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
 	struct kevent ev;
 	EventContext* context = new EventContext(fd, type ,data);
 
@@ -41,6 +43,7 @@ void EventHandler::addEvent(int filter, int fd, EventContext::EventType type, vo
 		Log::warning("Event add Failure. [%d] [%d].", fd, type); // todo stupid
         throw std::runtime_error(strerror(errno));
 	}
+	return context;
 }
 
 // Remove existing event on Kqueue
@@ -71,34 +74,45 @@ void EventHandler::removeEvent(int filter, EventContext* context) {
 //  - Parameters
 //      context: EventContext for event
 //  - Return(none)
-void EventHandler::addUserEvent(int fd, EventContext::EventType type, void* data) {
+EventContext* EventHandler::addUserEvent(int fd, EventContext::EventType type, void* data) {
 	struct kevent ev;
 	EventContext* context = new EventContext(fd, type ,data);
 
     EV_SET(&ev, fd, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER, 0, context);
     if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
         throw std::runtime_error("AddEvent(Oneshot flagged) Failed.");
+	return context;
 }
 
 int EventHandler::checkEvent(struct kevent* eventlist) {
 	return kevent(this->_kqueue, NULL, 0, eventlist, _maxEvent, NULL);
 }
 
-void EventHandler::addTimeoutEvent(int fd) {
+void EventHandler::addTimeoutEvent(EventContext* context) {
     struct kevent ev;
+	int fd = context->getIdent();
 
-    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, NULL);
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, context);
     if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
-        throw std::runtime_error("AddEvent(Oneshot flagged) Failed.");
+        throw std::runtime_error("AddEvent(timeout) Failed.");
 }
 
-void EventHandler::resetTimeoutEvent(int fd) {
+void EventHandler::resetTimeoutEvent(EventContext* context) {
+    struct kevent ev;
+	int fd = context->getIdent();
+
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_DELETE, 0, TIMEOUT, context);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("AddEvent(timeout reset) Failed.");
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, context);
+    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
+        throw std::runtime_error("AddEvent(timeout reset) Failed.");
+}
+
+void EventHandler::deleteTimeoutEvent(int fd) {
     struct kevent ev;
 
-    EV_SET(&ev, fd, EVFILT_TIMER, EV_DELETE, 0, TIMEOUT, NULL);
+    EV_SET(&ev, fd, EVFILT_TIMER, EV_DELETE, 0, TIMEOUT, 0);
     if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
-        throw std::runtime_error("AddEvent(timeout) Failed.");
-    EV_SET(&ev, fd, EVFILT_TIMER, EV_ADD | EV_ONESHOT, 0, TIMEOUT, NULL);
-    if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
-        throw std::runtime_error("AddEvent(timeout) Failed.");
+        throw std::runtime_error("AddEvent(timeout delete) Failed.");
 }

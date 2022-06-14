@@ -45,6 +45,8 @@ void Connection::updatePortString() {
 // Closes opened socket file descriptor.
 Connection::~Connection() {
     Log::verbose("Connection instance destructor has been called: [%d]", _ident);
+    // this->_eventHandler.deleteTimeoutEvent(this->_ident);
+    this->clearContextChain();
     close(this->_ident);
 }
 
@@ -118,8 +120,8 @@ EventContext::EventResult Connection::eventTransmit() {
 void Connection::dispose() {
     if (_closed == true)
         return;
-    _closed = true;
     Log::verbose("Socket instance closing. [%d]", this->_ident);
+    _closed = true;
 	_eventHandler.addUserEvent(
 		this->_ident,
         EventContext::EV_DisposeConn,
@@ -173,12 +175,26 @@ EventContext::EventResult Connection::eventCGIResponse(EventContext& context) {
     }
 }
 
-void Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data) {
-    this->_eventHandler.addEvent(filter, fd, type, data);
+void Connection::appendContextChain(EventContext* context) {
+    this->_eventContextChain.push_back(context);
 }
 
-void Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
-    this->_eventHandler.addEvent(filter, fd, type, data, pipe);
+void Connection::clearContextChain() {
+    std::list<EventContext*>::iterator iter;
+    for (iter = this->_eventContextChain.begin();
+        iter != this->_eventContextChain.end();
+        iter++) {
+            delete *iter;
+        }
+    this->_eventContextChain.clear();
+}
+
+EventContext* Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data) {
+    return this->_eventHandler.addEvent(filter, fd, type, data);
+}
+
+EventContext* Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
+    return this->_eventHandler.addEvent(filter, fd, type, data, pipe);
 }
 
 // Creates new Connection and set for the attribute.
@@ -230,11 +246,14 @@ void Connection::listenSocket() {
 }
 
 EventContext::EventResult Connection::passParsedRequest() {
-	_eventHandler.addUserEvent(
+    EventContext* context;
+
+	context = _eventHandler.addUserEvent(
 		this->_ident,
-        EventContext::EV_SetVirtualServer,
+        EventContext::EV_ProcessRequest,
         this
 	);
+    this->appendContextChain(context);
 	return EventContext::ER_Done;
 }
 

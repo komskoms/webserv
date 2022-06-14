@@ -201,14 +201,17 @@ void FTServer::initializeConnection(std::set<port_t>& ports) {
 //  - Return(none)
 void FTServer::eventAcceptConnection(Connection* connection) {
     Connection* newConnection = connection->acceptClient();
+    EventContext* context;
+
     this->_mConnection.insert(std::make_pair(newConnection->getIdent(), newConnection));
-    _eventHandler.addEvent(
+    context = _eventHandler.addEvent(
         EVFILT_READ,
         newConnection->getIdent(),
         EventContext::EV_Request,
         newConnection
     );
-    _eventHandler.addTimeoutEvent(newConnection->getIdent());
+    newConnection->appendContextChain(context);
+    _eventHandler.addTimeoutEvent(context);
     Log::verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
 
@@ -216,7 +219,7 @@ void FTServer::eventAcceptConnection(int ident) {
     return this->eventAcceptConnection(_mConnection[ident]);
 }
 
-void FTServer::callVirtualServerMethod(EventContext* context) {
+void FTServer::eventProcessRequest(EventContext* context) {
     Connection* connection = static_cast<Connection*>(context->getData());
     if (connection->isClosed())
         return;
@@ -224,7 +227,7 @@ void FTServer::callVirtualServerMethod(EventContext* context) {
     connection->setTargetVirtualServer(&matchingServer);
     VirtualServer::ReturnCode result;
 
-    _eventHandler.resetTimeoutEvent(context->getIdent());
+    _eventHandler.resetTimeoutEvent(context);
     result = matchingServer.processRequest(*connection, this->_eventHandler);
     connection->resetRequestStatus();
     switch (result) {
@@ -255,16 +258,18 @@ void FTServer::handleUserFlaggedEvent(struct kevent event) {
     if (event.filter != EVFILT_USER)
         return;
 	switch (context->getEventType()) {
-	case EventContext::EV_SetVirtualServer:
-        this->callVirtualServerMethod(context);
+	case EventContext::EV_ProcessRequest:
+        this->eventProcessRequest(context);
 		break;
 	case EventContext::EV_DisposeConn:
+        _eventHandler.setConnectionDeleted(true);
 		delete this->_mConnection[event.ident];
 		this->_mConnection.erase(event.ident);
+	    delete context;
 	default:
 		;
 	}
-	delete context;
+	// delete context;
 }
 
 //  Return appropriate server to process client connection.
@@ -302,6 +307,10 @@ void FTServer::run() {
         for (int i = 0; i < numbers; i++) {
             this->handleUserFlaggedEvent(events[i]);
             this->runEachEvent(events[i]);
+            if (_eventHandler.isConnectionDeleted()) {
+                _eventHandler.setConnectionDeleted(false);
+                continue;
+            }
         }
     }
     catch (const std::runtime_error& excep) {
@@ -316,9 +325,9 @@ void FTServer::run() {
 //      filter: filter for triggered event
 //  - Returns
 //      Result flag of handled event
-EventContext::EventResult FTServer::driveThisEvent(int ident, EventContext* context, int filter) {
+EventContext::EventResult FTServer::driveThisEvent(EventContext* context, int filter) {
     if (filter == EVFILT_TIMER)
-        return eventTimeout(ident);
+        return eventTimeout(context);
 
     Connection* connection = static_cast<Connection*>(context->getData());
 	switch (context->getEventType()) {
@@ -350,7 +359,6 @@ EventContext::EventResult FTServer::driveThisEvent(int ident, EventContext* cont
 //      event: event to process
 //  - Return ( None )
 void FTServer::runEachEvent(struct kevent event) {
-    const int ident = event.ident;
     EventContext* context = (EventContext*)event.udata;
 	int filter = event.filter;
 	int eventResult;
@@ -358,7 +366,7 @@ void FTServer::runEachEvent(struct kevent event) {
     if (filter == EVFILT_USER)
         return ;
 
-	eventResult = this->driveThisEvent(ident, context, filter);
+	eventResult = this->driveThisEvent(context, filter);
 
 	switch (eventResult) {
 	case EventContext::ER_Done:
@@ -404,10 +412,13 @@ EventContext::EventResult FTServer::eventPOSTResponse(EventContext& context) {
 //  event function called when client connection exceeded request timeout.
 //  - Parameters context: context of event.
 //  - Return: result of event.
-EventContext::EventResult FTServer::eventTimeout(int ident) {
-    Connection* const timeoutedClientConnection = this->_mConnection[ident];
+EventContext::EventResult FTServer::eventTimeout(EventContext* context) {
+    Connection* const timeoutedClientConnection = this->_mConnection[context->getIdent()];
 
+    if (timeoutedClientConnection == NULL)
+        return EventContext::ER_Done;
     timeoutedClientConnection->dispose();
+    // remove all chained context / event
 
     return EventContext::ER_Done;
 }

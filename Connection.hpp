@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
+#include <list>
 #include "Log.hpp"
 #include "EventHandler.hpp"
 #include "VirtualServer.hpp"
@@ -62,11 +63,13 @@ public:
     void appendResponseMessage(const std::string& message);
     EventContext::EventResult eventCGIParamBody(EventContext& context);
     EventContext::EventResult eventCGIResponse(EventContext& context);
-    void addKevent(int filter, int fd, EventContext::EventType type, void* data);
-    void addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
+    void appendContextChain(EventContext* context);
+    void clearContextChain();
+    EventContext* addKevent(int filter, int fd, EventContext::EventType type, void* data);
+    EventContext* addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
     void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention);
     void updatePortString();
-        
+
     class MAKESOCKETFAIL: public std::exception {
     public:
         virtual const char* what() const throw() {
@@ -104,10 +107,12 @@ private:
     Request _request;
     Response _response;
 	EventHandler& _eventHandler;
-//    int _readEventTriggered;
-//    int _writeEventTriggered;
     bool _closed;
 
+	std::list<EventContext*> _eventContextChain;
+    // timeout event에서 참조하여 객체 및 이벤트 정리 [v]
+    // 관련된 각 이벤트 생성 시 list에 추가.. cgi,file...
+    // 관련된 각 이벤트 뒈짐 시 list에서 삭제
     VirtualServer* _targetVirtualServer;
 
     std::string _portString;

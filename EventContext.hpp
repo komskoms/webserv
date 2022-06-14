@@ -6,16 +6,16 @@
 class EventContext {
 public:
 	enum EventType {
+        EV_SetVirtualServerErrorPage,
 		EV_Accept,
-		EV_SetVirtualServer,
-		EV_DisposeConn,
 		EV_Request,
-		EV_Response,
+		EV_ProcessRequest,
 		EV_CGIParamBody,
 		EV_CGIResponse,
-        EV_SetVirtualServerErrorPage,
         EV_GETResponse,
         EV_POSTResponse,
+		EV_Response,
+		EV_DisposeConn,
 	};
 	enum EventResult {
 		ER_Done,
@@ -33,6 +33,7 @@ public:
 	void* getData() { return _data; };
 	int getReadPipe() { return _pipe[0]; };
 	int getWritePipe() { return _pipe[1]; };
+	// void setData(void* data) { };
 	void setPipe(int readPipe, int writePipe);
 
 private:
