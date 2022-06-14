@@ -59,3 +59,9 @@ void Response::initBodyBySize(std::string::size_type size) {
     this->_message.reserve(this->_messageDataSize);
     this->_copyBegin = &this->_message[0] + headerSize;
 };
+
+void Response::forgeMessageIfEmpty() {
+    if (_message.empty() == true) {
+        _message = EMPTY_CGI_RESPONSE;
+    }
+}

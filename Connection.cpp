@@ -98,7 +98,10 @@ EventContext::EventResult Connection::eventReceive() {
 //  - Parameters(None)
 //  - Return(None)
 EventContext::EventResult Connection::eventTransmit() {
-    ReturnCaseOfSend result = this->_response.sendResponseMessage(this->_ident);
+    ReturnCaseOfSend result;
+    
+    this->_response.forgeMessageIfEmpty();
+    result = this->_response.sendResponseMessage(this->_ident);
 
     switch (result) {
 	case RCSEND_ERROR:

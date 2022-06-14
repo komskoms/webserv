@@ -30,4 +30,9 @@ font-family: Tahoma, Verdana, Arial, sans-serif; }\r\n\
 \r\n\
 \r\n"
 
+#define EMPTY_CGI_RESPONSE "HTTP/1.1 200 OK\r\n\
+Content-Type: text/html; charset=utf-8\r\n\
+Content-Length: 0\r\n\
+\r\n"
+
 #endif  // CONSTANT_HPP_
