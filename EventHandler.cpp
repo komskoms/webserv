@@ -67,7 +67,8 @@ void EventHandler::removeEvent(int filter, EventContext* context) {
 		if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
 			throw std::runtime_error("RemoveEvent Failed.");
 	}
-	delete context;
+    if (context->getEventType() != EventContext::EV_Request)
+        delete context;
 }
 
 // Add custom event on Kqueue (triggered just for 1 time)
