@@ -1,10 +1,12 @@
 #ifndef LOCATION_HPP_
 #define LOCATION_HPP_
 
+#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
 #include "Request.hpp"
+#include "Log.hpp"
 
 //  The location directive data for Server.
 //  - Member variables
@@ -22,6 +24,7 @@ public:
     bool isRouteMatch(const std::string& resourceURI) const;
     bool isRequestMethodAllowed(HTTP::RequestMethod requestMethod) const;
     void updateRepresentationPath(const std::string& resourceURI, std::string& representationPath) const;
+    void updateRepresentationCGIPath(const std::string& resourceURI, std::string& representationCGIPath) const;
 
     std::string getRoute() const { return this->_route; };
     std::string getRoot() const { return this->_root; };

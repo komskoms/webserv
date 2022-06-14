@@ -303,6 +303,8 @@ HTTP::RequestMethod Request::requestMethodByString(const std::string& token) {
     else
         method = HTTP::RM_UNKNOWN;
 
+    this->_methodString = token;
+
     return method;
 }
 

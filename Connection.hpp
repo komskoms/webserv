@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sstream>
 #include "Log.hpp"
 #include "EventHandler.hpp"
 #include "VirtualServer.hpp"
@@ -49,6 +50,7 @@ public:
     bool isClosed() { return this->_closed; };
     VirtualServer* getTargetVirtualServer() { return this->_targetVirtualServer; };
     void setTargetVirtualServer(VirtualServer* targetVirtualServer) { this->_targetVirtualServer = targetVirtualServer; };
+    const std::string& getPortString() { return this->_portString; };
 
     Connection* acceptClient();
     EventContext::EventResult eventReceive();
@@ -63,6 +65,7 @@ public:
     void addKevent(int filter, int fd, EventContext::EventType type, void* data);
     void addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
     void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention);
+    void updatePortString();
         
     class MAKESOCKETFAIL: public std::exception {
     public:
@@ -106,6 +109,8 @@ private:
     bool _closed;
 
     VirtualServer* _targetVirtualServer;
+
+    std::string _portString;
 
     Connection(int ident, std::string addr, port_t port, EventHandler& evHandler);
 

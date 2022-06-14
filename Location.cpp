@@ -1,4 +1,3 @@
-#include <sstream>
 #include "Location.hpp"
 
 Location::Location():
@@ -18,6 +17,10 @@ _allowedHTTPMethod(7)
 void Location::updateRepresentationPath(const std::string& resourceURI, std::string& representationPath) const {
     representationPath = this->_root + '/';
     representationPath += (resourceURI.c_str() + this->_route.length());
+}
+
+void Location::updateRepresentationCGIPath(const std::string& resourceURI, std::string& representationCGIPath) const {
+        representationCGIPath = (resourceURI.c_str() + this->_route.length());
 }
 
 //  get client_max_body_size value.

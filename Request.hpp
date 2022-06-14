@@ -68,6 +68,7 @@ public:
     ~Request();
 
     HTTP::RequestMethod getMethod() const { return this->_method; };
+    const std::string& getMethodString() const { return this->_methodString; };
     const std::string& getTargetResourceURI() const { return this->_target; };
     char getMajorVersion() const { return this->_majorVersion; };
     char getMinorVersion() const { return this->_minorVersion; };
@@ -88,6 +89,7 @@ private:
     std::string _message;
 
     HTTP::RequestMethod _method;
+    std::string _methodString;
     std::string _target;
     std::vector<std::string> _targetToken;
     char _majorVersion;

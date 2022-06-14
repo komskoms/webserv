@@ -963,17 +963,19 @@ void VirtualServer::fillCGIEnvMap(Connection& clientConnection, Location locatio
 	StringMap& em = this->_CGIEnvironmentMap;
     const Request& request = clientConnection.getRequest();
     const std::vector<std::string> uriInfo = clientConnection.getRequest().getTargetToken();
+    std::string scriptName;
 
+    location.updateRepresentationCGIPath(uriInfo[0], scriptName);
     insertToStringMap(em, "SERVER_SOFTWARE", "FTServer/0.1");
     insertToStringMap(em, "SERVER_NAME", "NoName");
     insertToStringMap(em, "GATEWAY_INTERFACE", "CGI/1.1");
 
     insertToStringMap(em, "SERVER_PROTOCOL", "HTTP/1.1");
-	insertToStringMap(em, "SERVER_PORT", "80");
-    insertToStringMap(em, "REQUEST_METHOD", "POST");
+	insertToStringMap(em, "SERVER_PORT", clientConnection.getPortString());
+    insertToStringMap(em, "REQUEST_METHOD", request.getMethodString());
     insertToStringMap(em, "PATH_INFO", uriInfo[1].empty() ? "/" : uriInfo[1]);
     insertToStringMap(em, "PATH_TRANSLATED", location.getRoot() + uriInfo[1]);
-    insertToStringMap(em, "SCRIPT_NAME", std::string("/") + uriInfo[0]);
+    insertToStringMap(em, "SCRIPT_NAME", scriptName);
     insertToStringMap(em, "QUERY_STRING", uriInfo[2]);
     insertToStringMap(em, "REMOTE_HOST", "");
     insertToStringMap(em, "REMOTE_ADDR", "");

@@ -13,6 +13,7 @@ Connection::Connection(port_t port, EventHandler& evHandler)
     this->newSocket();
     this->bindSocket();
     this->listenSocket();
+    this->updatePortString();
     Log::verbose("New Server Connection: socket[%d] port[%d]", _ident, _hostPort);
 }
 
@@ -30,8 +31,15 @@ Connection::Connection(int ident, std::string addr, port_t port, EventHandler& e
 , _eventHandler(evHandler)
 , _closed(false)
 , _targetVirtualServer(NULL) {
+    this->updatePortString();
     Log::verbose("New Client Connection: socket[%d]", _ident);
 }
+
+void Connection::updatePortString() {
+    std::ostringstream oss;
+    oss << this->_hostPort;
+    this->_portString = oss.str();
+};
 
 // Destructor of the Socket class
 // Closes opened socket file descriptor.
