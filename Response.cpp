@@ -29,7 +29,7 @@ void Response::appendMessage(const std::string& message) {
 ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
     if (this->_sendBegin == NULL)
         this->_sendBegin = &this->_message[0];
-    if (this->_messageDataSize = 0)
+    if (this->_messageDataSize == 0)
         this->_messageDataSize = this->_message.length();
 
     const std::string::size_type sendedSize = this->_sendBegin - &this->_message[0];
