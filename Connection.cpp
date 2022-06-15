@@ -265,7 +265,7 @@ void Connection::parseCGIurl(std::string const &targetResourceURI, std::string c
     const std::string::size_type targetQueryBeginPos = targetResourceURI.find_first_of(std::string("?"), targetExtBeginPos);
     std::string scriptName = targetResourceURI.substr(0, targetExtBeginPos + targetExtention.size());
     std::string pathInfo = targetResourceURI.substr(targetExtBeginPos + targetExtention.size(), targetQueryBeginPos - (targetExtBeginPos + targetExtention.size()));
-    std::string queryString = targetResourceURI.substr(targetQueryBeginPos + 1);;
+    std::string queryString = targetQueryBeginPos == std::string::npos ? "" : targetResourceURI.substr(targetQueryBeginPos + 1);
 
     this->_request.updateParsedTarget(scriptName);
     this->_request.updateParsedTarget(pathInfo);
