@@ -2,7 +2,7 @@ NAME        = webserv
 
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
-DEBUG       = -g
+DEBUG       = -g #-D NDEBUG
 
 INC         =	-I .
 
@@ -19,8 +19,6 @@ SRCS        =	VirtualServerConfig.cpp \
 				EventHandler.cpp \
 				EventContext.cpp \
 				main.cpp
-
-#				Request.cpp
 
 OBJS        = $(SRCS:.cpp=.o)
 RM          = rm -f

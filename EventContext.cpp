@@ -20,7 +20,7 @@ std::string EventContext::eventTypeToString(EventType type) {
 	case EV_Response:
 		return "EV_Response";
 	case EV_CGIParamBody:
-		return "EV_CGIResponse";
+		return "EV_CGIParamBody";
 	case EV_CGIResponse:
 		return "EV_CGIResponse";
     case EV_SetVirtualServerErrorPage:

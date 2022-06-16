@@ -75,9 +75,11 @@ public:
     std::string getMessage() const { return this->_message; };
     const std::string* getFirstHeaderFieldValueByName(const std::string& name) const;
     const std::string& getBody() const { return this->_body; };
+    const std::string& getReducedBody() const { return this->_reducedBody; };
     const std::vector<std::string> getTargetToken() const { return this->_targetToken; };
 
     void clearMessage();
+    void reduceBody(size_t index) { _reducedBody.erase(0, index); };
     void resetStatus() { this->_parsingStatus = S_NONE; };
     bool isParsingFail() const { return this->_parsingStatus == S_PARSING_FAIL; };
     bool isLengthRequired() const { return this->_parsingStatus == S_LENGTH_REQUIRED; };
@@ -98,6 +100,7 @@ private:
     HeaderSectionType _headerSection;
 
     std::string _body;
+    std::string _reducedBody;
 
     Status _parsingStatus;
 

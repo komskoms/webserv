@@ -178,6 +178,8 @@ Request::Status Request::parseMessage() {
         }
     }
 
+    this->_reducedBody = this->_body;
+
     this->_message.erase(0, parsedPositionOfMessage);
 
     if (result == PR_FAIL)

@@ -1070,7 +1070,7 @@ VirtualServer::ReturnCode VirtualServer::passCGI(Connection& clientConnection, c
         int statloc;
         waitpid(pid, &statloc, WNOHANG);
         if (WEXITSTATUS(statloc) == 130) {
-            Log::verbose("CGI execution failed.");
+            Log::debug("CGI execution failed.");
         } else {
 
             clientConnection.addKevent(

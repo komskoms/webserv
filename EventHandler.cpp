@@ -61,7 +61,7 @@ void EventHandler::removeEvent(int filter, EventContext* context) {
 		eventType == EventContext::EV_CGIResponse) {
         close(context->getReadPipe());
         close(context->getWritePipe());
-		Log::verbose("CGI pipe closed. [%d] [%d]", context->getReadPipe(), context->getWritePipe());
+		Log::verbose("CGI pipe closed. [%s] [%d] [%d]", context->getEventTypeToString().c_str(), context->getReadPipe(), context->getWritePipe());
 	} else {
 		EV_SET(&ev, fd, filter, EV_DELETE, 0, 0, context);
 		if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)

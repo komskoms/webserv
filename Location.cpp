@@ -1,4 +1,5 @@
 #include "Location.hpp"
+#include "constant.hpp"
 
 Location::Location():
 _route(""),

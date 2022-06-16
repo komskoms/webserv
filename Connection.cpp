@@ -100,7 +100,10 @@ EventContext::EventResult Connection::eventReceive() {
 EventContext::EventResult Connection::eventTransmit() {
     ReturnCaseOfSend result;
     
+    
+    Log::verbose("Request arrived.");
     this->_response.forgeMessageIfEmpty();
+    
     result = this->_response.sendResponseMessage(this->_ident);
 
     switch (result) {
@@ -133,11 +136,11 @@ void Connection::dispose() {
 }
 
 EventContext::EventResult Connection::eventCGIParamBody(EventContext& context) {
-	std::string body = this->getRequest().getBody();
+	Request& request = this->_request;
+	std::string body = request.getReducedBody();
     int PipeToCGI = context.getIdent();
 	size_t leftSize = body.length();
-	size_t offset = 0;
-    ssize_t writeResult = write(PipeToCGI, body.c_str() + offset, leftSize);
+    ssize_t writeResult = write(PipeToCGI, body.c_str(), leftSize > MAX_WRITEBUFFER ? MAX_WRITEBUFFER : leftSize);
 
     switch (writeResult) {
     case -1:
@@ -145,12 +148,13 @@ EventContext::EventResult Connection::eventCGIParamBody(EventContext& context) {
     case 0:
         return EventContext::ER_Remove;
     default:
-		leftSize -= writeResult;
-		offset += writeResult;
-        if (leftSize == 0) {
+        request.reduceBody(writeResult);
+		body = request.getReducedBody();
+        if (body.length() == 0) {
             return EventContext::ER_Remove;
         }
-        return EventContext::ER_Continue;
+        return EventContext::ER_Remove;
+        // return EventContext::ER_Continue;
     }
 }
 
