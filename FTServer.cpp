@@ -116,7 +116,7 @@ void FTServer::initializeVirtualServers() {
 //  make virtual server from config.
 VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServerConf) {
     VirtualServer* newVirtualServer;
-    directiveContainer config = virtualServerConf->getConfigs();           // original config in server Block
+    directiveContainer& config = virtualServerConf->getConfigs();           // original config in server Block
     std::set<LocationConfig *> locs = virtualServerConf->getLocations();   // config per location block
 
     std::stringstream ss;
@@ -137,10 +137,9 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
             newVirtualServer->setClientMaxBodySize(cmbs);
             ss.clear();
         }
-        if (itr->first.compare("error_page") == 0) {
-            if (itr->second.size() != 2)
-                continue;
-            newVirtualServer->updateErrorPage(this->_eventHandler, itr->second[0], itr->second[1]);
+        if (itr->first.compare("error_page") == 0) { 
+            for (std::vector<std::string>::size_type i = 0; i < itr->second.size(); i += 2)
+                newVirtualServer->updateErrorPage(this->_eventHandler, itr->second[i], itr->second[i + 1]);
         }
         else {
             for (size_t i = 0; i < itr->second.size(); i++)

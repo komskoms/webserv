@@ -21,7 +21,7 @@ public:
     
     bool    getInBrace() { return this->_inBrace; }
     std::set<LocationConfig *> getLocations() { return this->_locations; }
-    std::map<std::string, std::vector<std::string> > getConfigs() { return this->_configs; }
+    std::map<std::string, std::vector<std::string> >& getConfigs() { return this->_configs; }
     
     bool    parsing(std::fstream &fs, std::stringstream &ss, std::string confLine);
     void    appendConfig(std::string directive,  std::vector<std::string> value);

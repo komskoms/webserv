@@ -19,7 +19,15 @@ VirtualServerConfig::~VirtualServerConfig() {
 //      - value: 
 //  - return(None)
 void    VirtualServerConfig::appendConfig(std::string directive, std::vector<std::string> value) {
-    _configs.insert(make_pair(directive, value));
+    std::map<std::string, std::vector<std::string> >::iterator itr = this->_configs.find(directive);
+    if (itr->first == "error_page" && itr != this->_configs.end()) {
+        for (std::vector<std::string>::iterator itr2 = value.begin();
+            itr2 != value.end();
+            itr2++)
+        itr->second.push_back(*itr2);
+    }
+    else
+        _configs.insert(make_pair(directive, value));
 }
 
 //  Parse and tokenize raw string to server block
