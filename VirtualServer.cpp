@@ -975,7 +975,7 @@ void VirtualServer::fillCGIEnvMap(Connection& clientConnection, Location locatio
     insertToStringMap(em, "REQUEST_METHOD", request.getMethodString());
     insertToStringMap(em, "PATH_INFO", uriInfo[1].empty() ? "/" : uriInfo[1]);
     insertToStringMap(em, "PATH_TRANSLATED", location.getRoot() + uriInfo[1]);
-    insertToStringMap(em, "SCRIPT_NAME", scriptName);
+    insertToStringMap(em, "SCRIPT_NAME", "/" + scriptName);
     insertToStringMap(em, "QUERY_STRING", uriInfo[2]);
     insertToStringMap(em, "REMOTE_HOST", "");
     insertToStringMap(em, "REMOTE_ADDR", "");
