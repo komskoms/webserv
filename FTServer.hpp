@@ -29,9 +29,6 @@ struct ServerConfigKey {
 };
 
 // Manage multiple servers (like nginx)
-//  - TODO  
-//      config 컨테이너에서 실제 서버 객체 만드는 메소드
-//      함수 네이밍 변경(좀 더 구분하기 쉬운 형태로)
 //  - Member variables  
 //      _defaultConfigs: config file에서 파싱해서 정리한 config 컨테이너(vector), 서버마다 속성값 다르기에 구분
 //      _vVirtualServers: 
@@ -54,6 +51,12 @@ public:
     void eventAcceptConnection(int ident);
     void run();
 
+    class NOTOPENFILEERROR : public std::exception {
+    public:
+        virtual const char* what() const throw() {
+            return "not open file";
+        }
+    };
 private:
     typedef std::vector<VirtualServer*>             VirtualServerVec;
     typedef std::map<int, Connection*>           ConnectionMap;

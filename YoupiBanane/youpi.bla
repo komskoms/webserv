@@ -5,13 +5,11 @@ COUNT=$(wc <<< $VAL | awk '{print $3}')
 
 if [ $COUNT -gt 10000 ]
 then # when bigger than
-	echo -e "HTTP/1.1 201 OK\r"
+	echo -e "HTTP/1.1 201 created\r"
 else # when smaller than.
 	echo -e "HTTP/1.1 200 OK\r"
 fi
 echo -e "Content-Type: text/html; charset=utf-8\r"
-
-echo $COUNT >> .temp
 
 if [ $COUNT -gt 10000 ]; then
 	if [ ${VAL:0:1} = "y" ]; then

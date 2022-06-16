@@ -37,8 +37,6 @@ void    VirtualServerConfig::appendConfig(std::string directive, std::vector<std
 //      confLine: get one line from file stream(fs)
 //  - return
 //      If parsing success, it's true. if not, false.
-//  TODO
-//      - Functionalization progresses in semantic units
 bool    VirtualServerConfig::parsing(std::fstream &fs, std::stringstream &ss, std::string confLine)
 {
     std::string token;

@@ -13,7 +13,6 @@ _path("")
 //  - Parameters(None)
 LocationConfig::~LocationConfig()
 {
-    // TODO : make delete routine(member variables)
 }
 
 //  Append new header to header container
@@ -32,8 +31,6 @@ void    LocationConfig::appendHeader(std::string fieldName, std::vector<std::str
 //      confLine: get one line from file stream(fs)
 //  - return
 //      If parsing success, it's true. if not, false.
-//  TODO
-//      - Functionalization progresses in semantic units
 bool    LocationConfig::parsing(std::fstream &fs, std::stringstream &ss, std::string confLine)
 {
     std::string token;

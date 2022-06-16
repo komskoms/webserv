@@ -18,7 +18,6 @@ int main(int argc, char **argv) {
 	}
 	catch (const std::exception& excep) {
 		Log::error("VirtualServer::Fatal Error [%s]", excep.what());
-		// TODO: graceful shutdown process
 	}
     return 0;
 }

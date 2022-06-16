@@ -34,8 +34,6 @@ FTServer::~FTServer() {
 }
 
 // 전달받은 config file을 파싱
-//  - TODO
-//      - code refactoring
 //  - Parameters
 //      - filePath: config file이 존재하고 있는 경로
 //  - Return(None)
@@ -88,7 +86,7 @@ void FTServer::initParseConfig(std::string filePath) {
         }
     }
     else
-        throw std::domain_error("not open file");
+        throw FTServer::NOTOPENFILEERROR();
     this->printParseResult();
 }
 

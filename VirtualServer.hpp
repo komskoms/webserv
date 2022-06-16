@@ -68,7 +68,6 @@ inline const char* getStatusReasonBy(HTTP::Status::Index index) {
 
 }  // HTTP
 
-//  TODO Add member variable from server config.
 //  VirtualServer is the entity processing request from client.
 //  - Member variables
 //      enum ReturnCode: The return code for this->processRequest().
@@ -99,7 +98,7 @@ public:
     void setServerName(std::string serverName) { this->_name = serverName; }
     void setClientMaxBodySize(std::size_t clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; };
     void setOtherDirective(std::string directiveName, std::vector<std::string> directiveValue) { 
-        this->_others.insert(make_pair(directiveName, directiveValue)); // TODO multi-value
+        this->_others.insert(make_pair(directiveName, directiveValue));
     };
     void appendLocation(Location* lc) { this->_location.push_back(lc); };
     int updateErrorPage(EventHandler& eventHandler, const std::string& statusCode, const std::string& filePath);
@@ -110,8 +109,6 @@ public:
     VirtualServer::ReturnCode processRequest(Connection& clientConnection, EventHandler& eventHandler);
 
     std::string makeDateHeaderField();
-    // std::string makeAllowHeaderField();
-    // std::string makeContentLocationHeaderField();
     std::string makeLocationHeaderField(const std::map<std::string, std::vector<std::string> >& locOther);
 
 private:

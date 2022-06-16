@@ -865,12 +865,13 @@ std::string VirtualServer::makeDateHeaderField() {
 //  - Parameters
 //      locOther : etc directive set of connected locations
 //  - Return
-//      get redirection path. if not find, get null string(TODO)
+//      get redirection path. if not find, get null string
 std::string VirtualServer::makeLocationHeaderField(const std::map<std::string, std::vector<std::string> >& locOther) {
     std::map<std::string, std::vector<std::string> >::const_iterator otherIter = locOther.find("return");
-    if (otherIter != locOther.end())
+
+    if (otherIter != locOther.end() && otherIter->second.size() == 2)
         return otherIter->second.back();
-    return ""; // TODO not found redirection path
+    return "";
 }
 
 //  set 'type' of 'name'

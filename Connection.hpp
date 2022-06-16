@@ -23,10 +23,6 @@ class VirtualServer;
 typedef unsigned short port_t;
 
 //  General coonection handler, from generation communication.
-//   - TODO
-//      Connection should handle the receiving and transmiting without malfunction.
-//      소켓이 수신 결과를 Request객체로 저장할 수 있어야 함.
-//      소켓이 Response객체를 이용해 송신을 처리할 수 있어야 함.
 //   - Member Variables
 //      _client
 //      _ident
