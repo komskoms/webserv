@@ -2,7 +2,7 @@ NAME        = webserv
 
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
-DEBUG       = -g #-D NDEBUG
+DEBUG       = #-g #-D NDEBUG
 LOGLEVEL    = -DLOG_LEVEL=5
 
 INC         =	-I .
