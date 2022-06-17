@@ -61,9 +61,9 @@ public:
     EventContext::EventResult eventCGIResponse(EventContext& context);
     void appendContextChain(EventContext* context);
     void clearContextChain();
-    EventContext* addKevent(int filter, int fd, EventContext::EventType type, void* data);
+    EventContext* addKevent(int filter, int fd, EventContext::EventType type, void* data); // INFO unuse function
     EventContext* addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]);
-    void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention);
+    void parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtension);
     void updatePortString();
 
     class MAKESOCKETFAIL: public std::exception {

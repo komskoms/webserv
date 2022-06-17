@@ -31,7 +31,7 @@ public:
     std::string getIndex() const { return this->_index; };
     bool getAutoIndex() const { return this->_autoindex; };
     char getAllowedHTTPMethod() const { return this->_allowedHTTPMethod; };
-    std::vector<std::string> getCGIExtention() const { return this->_cgiExtension; };
+    std::vector<std::string> getCGIExtension() const { return this->_cgiExtension; };
     std::map<std::string, std::vector<std::string> > const &getOtherDirective() const { return this->_others; }; 
 
     int getClientMaxBodySize() const;
@@ -59,7 +59,7 @@ public:
         if (beAllowed)
             this->_allowedHTTPMethod = beAllowed;
     };
-    void setCGIExtention(std::vector<std::string> cgiExt) { this->_cgiExtension = cgiExt; }
+    void setCGIExtension(std::vector<std::string> cgiExt) { this->_cgiExtension = cgiExt; }
     void setOtherDirective(std::string directiveName, std::vector<std::string> directiveValue) { 
         _others.insert(make_pair(directiveName, directiveValue));
     };

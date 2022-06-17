@@ -6,7 +6,7 @@ EventContext::EventContext(int fd, EventType type, void* data)
 , _data(data) {
 	this->setPipe(-1, -1);
 }
-
+// Convert event type(enum -> string) 
 std::string EventContext::eventTypeToString(EventType type) {
 	switch (type) {
 	case EV_Accept:

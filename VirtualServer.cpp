@@ -8,6 +8,7 @@ static void insertToStringMap(StringMap& envMap, std::string key, std::string va
 
 using HTTP::Status;
 
+// HTTP status code
 const Status Status::_array[] = {
     { "000", "default" },
     { "200", "ok" },
@@ -26,7 +27,10 @@ static void updateContentType(const std::string& name, std::string& type);
 static void updateExtension(const std::string& name, std::string& extension);
 static void updateBodyString(HTTP::Status::Index index, const char* description, std::string& bodyString);
 //  Default constructor of VirtualServer.
-//  - Parameters(None)
+//  - Parameters
+//      portNumber: The port number.
+//      serverName: The server name.
+//      clientMaxBodySize: The client max body size
 VirtualServer::VirtualServer()
 : _portNumber(0),
 _name(""),
@@ -38,8 +42,11 @@ _clientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE)
 //  - Parameters
 //      portNumber: The port number.
 //      serverName: The server name.
+//      clientMaxBodySize: The client max body size
 VirtualServer::VirtualServer(port_t portNumber, const std::string& name)
-: _portNumber(portNumber), _name(name) {
+: _portNumber(portNumber), 
+_name(name), 
+_clientMaxBodySize(DEFAULT_CLIENT_MAX_BODY_SIZE) {
 }
 
 //  update error page of virtual server.
@@ -157,20 +164,21 @@ const Location* VirtualServer::getMatchingLocation(const Request& request) {
     return NULL;
 }
 
+// Detect CGI file using file extension
 bool VirtualServer::detectCGI(Connection& clientConnection, const Location& location, const std::string& targetResourceURI) {
-    std::string targetExtention;
-    std::vector<std::string> cgiExtensionOnLocation = location.getCGIExtention();
+    std::string targetExtension;
+    std::vector<std::string> cgiExtensionOnLocation = location.getCGIExtension();
     std::vector<std::string>::iterator findResult;
-    updateExtension(targetResourceURI, targetExtention);
+    updateExtension(targetResourceURI, targetExtension);
     findResult = std::find(
         cgiExtensionOnLocation.begin(),
         cgiExtensionOnLocation.end(),
-        targetExtention
+        targetExtension
     );
     if ( findResult == cgiExtensionOnLocation.end()) {
         return false;
     } else {
-        clientConnection.parseCGIurl(targetResourceURI, targetExtention);
+        clientConnection.parseCGIurl(targetResourceURI, targetExtension);
         this->fillCGIEnvMap(clientConnection, location);
         return true;
     }
@@ -540,6 +548,9 @@ void VirtualServer::updateBodyString(HTTP::Status::Index index, const char* desc
         bodyString = errorPageIterator->second;
 }
 
+//  set response message with 201 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return(None)
 VirtualServer::ReturnCode VirtualServer::set201Response(Connection& clientConnection) {
     clientConnection.clearResponseMessage();
     this->appendStatusLine(clientConnection, Status::I_201);
@@ -560,6 +571,9 @@ VirtualServer::ReturnCode VirtualServer::set201Response(Connection& clientConnec
     return RC_SUCCESS;
 }
 
+//  set response message with 301 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return(None)
 VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther) {
     std::string bodyString;
     std::stringstream ss;
@@ -577,7 +591,7 @@ VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnec
     clientConnection.appendResponseMessage("\r\n");
     // location
     clientConnection.appendResponseMessage("Location: ");
-    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther) + clientConnection.getRequest().getTargetResourceURI().substr(1));
+    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther) + clientConnection.getRequest().getTargetResourceURI().substr(1)); // $request_uri
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("\r\n");
 
@@ -585,6 +599,9 @@ VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnec
     return RC_SUCCESS;
 }
 
+//  set response message with 308 status.
+//  - Parameters clientConnection: The client connection.
+//  - Return(None)
 VirtualServer::ReturnCode VirtualServer::set308Response(Connection& clientConnection, const std::map<std::string, std::vector<std::string> >& locOther) {
     std::string bodyString;
     std::stringstream ss;
@@ -848,18 +865,6 @@ std::string VirtualServer::makeDateHeaderField() {
     std::string dateStr = cDate;
     return dateStr;
 }
-
-// Make Content-Location Field (path of appropriate data)
-//  - Parameters(None)
-//  - Return
-// std::string VirtualServer::makeContentLocationHeaderField() {
-//     // 해당 파일의 경로를 갖고오는 함수
-//     // content-type(mime)을 기준으로 찾아주는거 같음
-//     // 만약 해당 uri가 파일이다 -> 그대로 출력
-//     // 파일인지 모른다 -> accept language랑 accept encoding을 기준으로 해당 경로의 파일들을 다 탐색
-//     std::string t;
-//     return t;
-// }
 
 // Make Location Field (redirection path)
 //  - Parameters

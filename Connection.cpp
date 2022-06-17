@@ -35,6 +35,7 @@ Connection::Connection(int ident, std::string addr, port_t port, EventHandler& e
     Log::verbose("New Client Connection: socket[%d]", _ident);
 }
 
+// Convert port type(port_t -> string)
 void Connection::updatePortString() {
     std::ostringstream oss;
     oss << this->_hostPort;
@@ -135,6 +136,7 @@ void Connection::dispose() {
 	);
 }
 
+// Write reqeust body to CGI input(event driven)
 EventContext::EventResult Connection::eventCGIParamBody(EventContext& context) {
 	Request& request = this->_request;
 	std::string body = request.getReducedBody();
@@ -158,6 +160,7 @@ EventContext::EventResult Connection::eventCGIParamBody(EventContext& context) {
     }
 }
 
+// Read CGI output and append to response (event driven)
 EventContext::EventResult Connection::eventCGIResponse(EventContext& context) {
     char buffer[BUF_SIZE];
     int PipeFromCGI = context.getIdent();
@@ -196,10 +199,12 @@ void Connection::clearContextChain() {
     this->_eventContextChain.clear();
 }
 
+// Add event in kevent(normal case)
 EventContext* Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data) {
     return this->_eventHandler.addEvent(filter, fd, type, data);
 }
 
+// Add event in kevent(cgi case)
 EventContext* Connection::addKevent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
     return this->_eventHandler.addEvent(filter, fd, type, data, pipe);
 }
@@ -264,11 +269,12 @@ EventContext::EventResult Connection::passParsedRequest() {
 	return EventContext::ER_Done;
 }
 
-void Connection::parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtention) {
-    const std::string::size_type targetExtBeginPos = targetResourceURI.find(targetExtention);
+// for CGI input parameter
+void Connection::parseCGIurl(std::string const &targetResourceURI, std::string const &targetExtension) {
+    const std::string::size_type targetExtBeginPos = targetResourceURI.find(targetExtension);
     const std::string::size_type targetQueryBeginPos = targetResourceURI.find_first_of(std::string("?"), targetExtBeginPos);
-    std::string scriptName = targetResourceURI.substr(0, targetExtBeginPos + targetExtention.size());
-    std::string pathInfo = targetResourceURI.substr(targetExtBeginPos + targetExtention.size(), targetQueryBeginPos - (targetExtBeginPos + targetExtention.size()));
+    std::string scriptName = targetResourceURI.substr(0, targetExtBeginPos + targetExtension.size());
+    std::string pathInfo = targetResourceURI.substr(targetExtBeginPos + targetExtension.size(), targetQueryBeginPos - (targetExtBeginPos + targetExtension.size()));
     std::string queryString = targetQueryBeginPos == std::string::npos ? "" : targetResourceURI.substr(targetQueryBeginPos + 1);
 
     this->_request.updateParsedTarget(scriptName);

@@ -11,7 +11,6 @@ int main(int argc, char **argv) {
 		configFile = argv[1];
 	try {
 	    FTServer ftServer;
-
         ftServer.initParseConfig(configFile);
 		ftServer.init();
 		ftServer.run();

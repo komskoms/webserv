@@ -31,7 +31,7 @@ EventContext* EventHandler::addEvent(int filter, int fd, EventContext::EventType
 	}
 	return context;
 }
-
+// Add new event on Kqueue(CGI case)
 EventContext* EventHandler::addEvent(int filter, int fd, EventContext::EventType type, void* data, int pipe[2]) {
 	struct kevent ev;
 	EventContext* context = new EventContext(fd, type ,data);
@@ -84,11 +84,12 @@ EventContext* EventHandler::addUserEvent(int fd, EventContext::EventType type, v
         throw std::runtime_error("AddEvent(Oneshot flagged) Failed.");
 	return context;
 }
-
+// Check a number of event in kqueue
 int EventHandler::checkEvent(struct kevent* eventlist) {
 	return kevent(this->_kqueue, NULL, 0, eventlist, _maxEvent, NULL);
 }
 
+// Add a Timeout event
 void EventHandler::addTimeoutEvent(EventContext* context) {
     struct kevent ev;
 	int fd = context->getIdent();
@@ -97,7 +98,7 @@ void EventHandler::addTimeoutEvent(EventContext* context) {
     if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
         throw std::runtime_error("AddEvent(timeout) Failed.");
 }
-
+// Add an event to reset a timeout event
 void EventHandler::resetTimeoutEvent(EventContext* context) {
     struct kevent ev;
 	int fd = context->getIdent();
@@ -109,7 +110,7 @@ void EventHandler::resetTimeoutEvent(EventContext* context) {
     if (kevent(_kqueue, &ev, 1, 0, 0, 0) < 0)
         throw std::runtime_error("AddEvent(timeout reset) Failed.");
 }
-
+// Add an event to delete a timeout event
 void EventHandler::deleteTimeoutEvent(int fd) {
     struct kevent ev;
 

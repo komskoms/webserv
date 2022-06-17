@@ -52,6 +52,7 @@ ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
     }
 }
 
+// initialize body size in Response
 void Response::initBodyBySize(std::string::size_type size) {
     std::string::size_type headerSize = this->_message.length();
     this->_messageDataSize = headerSize + size;

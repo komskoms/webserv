@@ -1,6 +1,5 @@
 #include "Log.hpp"
 
-
 const char* Log::getPrefix(int logLevel) {
     switch (logLevel)
     {

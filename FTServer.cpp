@@ -149,7 +149,7 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
         directiveContainer lcDirect = (*itr)->getDirectives();
         Location* newLocation = new Location();
 
-        // 고유 키 등록
+        // register original key
         newLocation->setRoute((*itr)->getPath());
         for (directiveContainer::iterator itr2 = lcDirect.begin(); itr2 != lcDirect.end(); itr2++) {
             if (!itr2->first.compare("autoindex") && !itr2->second.front().compare("on"))
@@ -161,7 +161,7 @@ VirtualServer*    FTServer::makeVirtualServer(VirtualServerConfig* virtualServer
                 newLocation->setAllowedHTTPMethod(itr2->second); 
             }
             else if (!itr2->first.compare("cgi")) {
-                newLocation->setCGIExtention(itr2->second);
+                newLocation->setCGIExtension(itr2->second);
             }
             else if (!itr2->first.compare("root")) {
                 newLocation->setRoot(itr2->second[0]);
@@ -212,6 +212,7 @@ void FTServer::eventAcceptConnection(Connection* connection) {
     Log::verbose("Client Accepted: [%s]", newConnection->getAddr().c_str());
 }
 
+// Just returns an connection associated with the accepted ident
 void FTServer::eventAcceptConnection(int ident) {
     return this->eventAcceptConnection(_mConnection[ident]);
 }
@@ -420,11 +421,8 @@ EventContext::EventResult FTServer::eventTimeout(EventContext* context) {
     return EventContext::ER_Done;
 }
 
+// just print a result of configuration file
 void FTServer::printParseResult() {
-    // default 서버
-    // serverblock별
-    //      기본 설정판
-    //      location block별 판
     int i = 1;
     for(VirtualServerConfigIter vscItr = this->_defaultConfigs.begin();
         vscItr != this->_defaultConfigs.end();

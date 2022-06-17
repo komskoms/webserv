@@ -48,15 +48,14 @@ bool    VirtualServerConfig::parsing(std::fstream &fs, std::stringstream &ss, st
     if (token != "{")
         return false;
     this->_inBrace = true;
-    // token.clear();
     while (true) {
         if (ss.eof()) {
-            if (!getline(fs, confLine)) // 스트림이 비어있고 가져올 줄이 없는 경우
+            if (!getline(fs, confLine))
                 break ;
             ss.clear();
             ss << confLine;
         }
-        if (!(ss >> token)) // \t도 인식하는 것 같음(lldb에서는 확인 안됨)
+        if (!(ss >> token))
             continue;
         if (token == "location") {
             lc = new LocationConfig();
