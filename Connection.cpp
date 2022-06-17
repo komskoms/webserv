@@ -102,6 +102,7 @@ EventContext::EventResult Connection::eventTransmit() {
     ReturnCaseOfSend result;
     
     this->_response.forgeMessageIfEmpty();
+    this->_response.forgeStartlineForCGI();
     
     result = this->_response.sendResponseMessage(this->_ident);
 

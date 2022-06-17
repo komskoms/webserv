@@ -66,3 +66,28 @@ void Response::forgeMessageIfEmpty() {
         _message = EMPTY_CGI_RESPONSE;
     }
 }
+
+void Response::forgeStartlineForCGI() {
+    size_t bodyBeginIndex = _message.find("\r\n\r\n") + 4;
+    size_t bodyLength;
+    size_t findResult;
+    std::string contentLengthLine;
+    std::ostringstream oss;
+
+    findResult = _message.find("HTTP");
+    if (findResult == 0)
+        return ;
+    _message.insert(0, "HTTP/1.1 200 OK\r\n");
+    bodyBeginIndex += 17;
+    findResult = _message.find("Content-Length");
+    if (findResult != std::string::npos)
+        return ;
+    // if (findResult > bodyBeginIndex)
+    //     return ;
+    bodyLength = _message.length() - bodyBeginIndex;
+    if (bodyLength < 0)
+        return ;
+    oss << "Content-Length: " << bodyLength << "\r\n";
+    contentLengthLine = oss.str();
+    _message.insert(bodyBeginIndex - 2, contentLengthLine);
+}
