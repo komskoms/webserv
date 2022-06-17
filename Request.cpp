@@ -51,6 +51,7 @@ ReturnCaseOfRecv Request::receive(int clientSocketFD) {
 
     ReturnCaseOfRecv returnCode;
     if (this->isReadyToProcess() || this->isStatusParsingBody()) {
+        this->_targetToken.clear();
         this->_parsingStatus = this->parseMessage();
         if (this->_parsingStatus == S_PARSING_FAIL)
             this->_message.clear();
