@@ -14,7 +14,7 @@ Connection::Connection(port_t port, EventHandler& evHandler)
     this->bindSocket();
     this->listenSocket();
     this->updatePortString();
-    Log::verbose("New Server Connection: socket[%d] port[%d]", _ident, _hostPort);
+    Log::info("New Server Connection: socket[%d] port[%d]", _ident, _hostPort);
 }
 
 // Constructor of Connection class
@@ -32,7 +32,7 @@ Connection::Connection(int ident, std::string addr, port_t port, EventHandler& e
 , _closed(false)
 , _targetVirtualServer(NULL) {
     this->updatePortString();
-    Log::verbose("New Client Connection: socket[%d]", _ident);
+    Log::info("New Client Connection: socket[%d]", _ident);
 }
 
 // Convert port type(port_t -> string)
@@ -67,7 +67,7 @@ Connection* Connection::acceptClient() {
     }
     addr = inet_ntoa(remoteaddr.sin_addr);
     port = ntohs(remoteaddr.sin_port);
-    Log::verbose("Connected from client[%s:%d]", addr.c_str(), port);
+    Log::info("Connected from client[%s:%d]", addr.c_str(), port);
     if (fcntl(clientfd, F_SETFL, O_NONBLOCK) < 0)
         throw std::runtime_error("fcntl Failed");
     return new Connection(clientfd, addr, this->_hostPort, _eventHandler);
@@ -101,8 +101,6 @@ EventContext::EventResult Connection::eventReceive() {
 EventContext::EventResult Connection::eventTransmit() {
     ReturnCaseOfSend result;
     
-    
-    Log::verbose("Request arrived.");
     this->_response.forgeMessageIfEmpty();
     
     result = this->_response.sendResponseMessage(this->_ident);

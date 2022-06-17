@@ -3,9 +3,9 @@ NAME        = webserv
 CXX         = c++
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98
 DEBUG       = -g #-D NDEBUG
+LOGLEVEL    = -DLOG_LEVEL=5
 
 INC         =	-I .
-
 
 SRCS        =	VirtualServerConfig.cpp \
 				Log.cpp \
@@ -24,7 +24,7 @@ OBJS        = $(SRCS:.cpp=.o)
 RM          = rm -f
 
 .cpp.o:
-				${CXX} ${CXXFLAGS} ${DEBUG} -c $< -o ${<:.cpp=.o}
+				${CXX} ${CXXFLAGS} ${DEBUG} ${LOGLEVEL} -c $< -o ${<:.cpp=.o}
 
 $(NAME): ${OBJS}
 				${CXX} ${CXXFLAGS} ${DEBUG} $(OBJS) $(INC) -o $(NAME)

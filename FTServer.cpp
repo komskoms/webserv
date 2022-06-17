@@ -299,7 +299,7 @@ void FTServer::run() {
     try {
         numbers = _eventHandler.checkEvent(events);
         if (numbers < 0) {
-            Log::warning("kevent error [%s]", strerror(errno));
+            Log::warning("kevent polling error");
             continue;
         }
         for (int i = 0; i < numbers; i++) {
