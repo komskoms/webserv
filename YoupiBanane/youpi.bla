@@ -3,7 +3,7 @@
 read VAL 
 COUNT=$(wc <<< $VAL | awk '{print $3}')
 
-if [ $COUNT -gt 10000 ]
+if [ $REQUEST_METHOD = "POST" ]
 then # when bigger than
 	echo -e "HTTP/1.1 201 created\r"
 else # when smaller than.
