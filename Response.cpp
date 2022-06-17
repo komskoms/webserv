@@ -47,6 +47,7 @@ ReturnCaseOfSend Response::sendResponseMessage(int clientSocket) {
     else {
         this->_message.clear();
         this->_sendBegin = NULL;
+        this->_messageDataSize = 0;
 
         return RCSEND_ALL;
     }
