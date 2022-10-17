@@ -1,0 +1,28 @@
+#!/bin/bash
+
+read VAL 
+COUNT=$(wc <<< $VAL | awk '{print $3}')
+
+if [ $REQUEST_METHOD = "POST" ]
+then # when bigger than
+	echo -e "HTTP/1.1 201 created\r"
+else # when smaller than.
+	echo -e "HTTP/1.1 200 OK\r"
+fi
+echo -e "Content-Type: text/html; charset=utf-8\r"
+
+if [ $COUNT -gt 10000 ]; then
+	if [ ${VAL:0:1} = "y" ]; then
+		echo -e "Content-Length: 100000\r"
+		echo -e "\r"
+		perl -e 'print "Y" x 100000'
+	else
+		echo -e "Content-Length: 100000000\r"
+		echo -e "\r"
+		perl -e 'print "N" x 100000000'
+	fi
+else
+	echo -e "Content-Length: $(wc <<< $VAL | awk '{print $3}')\r"
+	echo -e "\r"
+	echo $VAL
+fi
