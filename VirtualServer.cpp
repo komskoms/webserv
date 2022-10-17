@@ -591,7 +591,7 @@ VirtualServer::ReturnCode VirtualServer::set301Response(Connection& clientConnec
     clientConnection.appendResponseMessage("\r\n");
     // location
     clientConnection.appendResponseMessage("Location: ");
-    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther) + clientConnection.getRequest().getTargetResourceURI().substr(1)); // $request_uri
+    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther)); // $request_uri
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("\r\n");
 
@@ -619,7 +619,7 @@ VirtualServer::ReturnCode VirtualServer::set308Response(Connection& clientConnec
     clientConnection.appendResponseMessage("\r\n");
     // location
     clientConnection.appendResponseMessage("Location: ");
-    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther) + clientConnection.getRequest().getTargetResourceURI().substr(1));
+    clientConnection.appendResponseMessage(this->makeLocationHeaderField(locOther));
     clientConnection.appendResponseMessage("\r\n");
     clientConnection.appendResponseMessage("\r\n");
 
